@@ -75,18 +75,18 @@ class Agent:
             V_d2 = np.mean(Voltages[-i - 1])
             max_v = np.max(Voltages[-i])
             min_v = np.min(Voltages[-i])
-            max_diff = abs(self.V_output_max - max_v)
+            max_diff = abs(max_v - self.V_output_max)
             min_diff = abs(self.V_output_min - min_v)
             k = abs(V_d1 - V_d2)
             rscaler = 10
-            reward += 1/(max_diff + min_diff)
+            reward += 1/((max_diff + min_diff)*rscaler)
             reward += 1/(k * rscaler)
             if self.V_output_max > max_v > self.V_output_min and self.V_output_min < min_v < self.V_output_max:
-                reward += 20
+                reward += 100
             if self.V_output_min < V_d1 < self.V_output_max:
-                reward += 10
+                reward += 5
             if self.V_output_min < V_d2 < self.V_output_max:
-                reward += 10
+                reward += 5
         return reward
 
     def get_state(self):

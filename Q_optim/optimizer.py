@@ -27,6 +27,7 @@ def train():
         state_old = agent.get_state()
 
         # get new move
+
         final_move = agent.get_action(state_old)
         # take a move
 
@@ -47,8 +48,9 @@ def train():
         agent.remember_state(state_old, final_move, reward, state_new, done)
         reward -= 1
 
-        if reward == 100:
+        if reward > record:
             done = 1
+        print("REWARD : ",reward)
         if done:
             # train long memory, plot result
             agent.n_games += 1
@@ -59,7 +61,7 @@ def train():
                 agent.model.save()
 
             print('Game', agent.n_games, 'Score', reward, 'Record:', record)
-
+            ldo_sim.play_step(1)
             plot_scores.append(reward)
             total_score += reward
             mean_score = total_score / agent.n_games
@@ -69,7 +71,7 @@ def train():
             print(agent.ldo_sim.state_var_str)
             ldo_sim = LDO_SIM()
             ldo_sim.generate_output_dim()
-            ldo_sim.play_step(0)
+            #ldo_sim.play_step(1)
 
 
 if __name__ == '__main__':

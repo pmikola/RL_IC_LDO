@@ -128,7 +128,7 @@ class Qtrainer:
             game_over = (game_over,)  # tuple with only one value
 
         # predicted Values
-        Q_s = torch.abs(self.model(state))
+        Q_s = torch.abs(self.model(state)).to(device)
         Q_ns = Q_s.clone()
         for idx in range(len(game_over)):
             # print("prediction\n : ", prediction)
