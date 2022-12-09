@@ -42,7 +42,7 @@ class Agent:
         self.V_output_min = None
         self.V_output_max = None
         self.V_output = None
-        self.n_games = 0
+        self.n_games = 1
         self.epsilon = 0.5  # randomness
         self.gamma = 0.95  # discount rate
         self.alpha = 0.2  # learning rate
@@ -51,8 +51,8 @@ class Agent:
         self.trainer = Qtrainer(self.model, lr=0.001, gamma=self.gamma)  # , alpha=self.alpha)
         self.game = None
         self.agent = None
-        self.plot_scores = []
-        self.plot_mean_scores = []
+        self.scores = []
+        self.mean_scores = []
         self.plot_loss = []
         self.total_score = 0.
         self.record = -1000.
@@ -60,6 +60,7 @@ class Agent:
         self.agent = []
         self.plot_n_games = []
         self.done = False
+        self.rewards = []
 
     def define_goals(self, Vout, I_max, I_min, error):
         self.V_output = Vout
@@ -78,15 +79,15 @@ class Agent:
             max_diff = abs(max_v - self.V_output_max)
             min_diff = abs(self.V_output_min - min_v)
             k = abs(V_d1 - V_d2)
-            rscaler = 10
-            reward += 1/((max_diff + min_diff)*rscaler)
-            reward += 1/(k * rscaler)
+            l = abs(max_diff - min_diff)
+            rscaler = 1
+            reward -= (k * rscaler) + (l * rscaler)
             if self.V_output_max > max_v > self.V_output_min and self.V_output_min < min_v < self.V_output_max:
                 reward += 100
             if self.V_output_min < V_d1 < self.V_output_max:
-                reward += 5
+                reward += 25
             if self.V_output_min < V_d2 < self.V_output_max:
-                reward += 5
+                reward += 25
         return reward
 
     def get_state(self):
@@ -102,6 +103,11 @@ class Agent:
         else:
             mini_sample = self.memory
         states, actions, rewards, next_states, dones = zip(*mini_sample)
+        # print("state:", np.array(states[0]).shape[0])
+        # print("action:", np.array(actions).shape)
+        # print("reward:", np.array(rewards).shape)
+        # print("next_state:", np.array(next_states).shape)
+        time.sleep(10)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
 
     def train_short_memory(self, state, action, reward, next_state, done):
@@ -110,14 +116,19 @@ class Agent:
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
         # print(len(state)) # 3787
+
         self.epsilon = 80 - self.n_games
         final_move = self.ldo_sim.output_shape
         if random.randint(0, 200) < self.epsilon:
-            for i in range(0,len(self.ldo_sim.output_shape)):
-                final_move[i] = np.random.uniform(self.ldo_sim.dim_range_min,self.ldo_sim.dim_range_max)
+            for i in range(0, len(self.ldo_sim.output_shape)):
+                if i == 8:
+                    final_move[i] = np.random.uniform(10000., self.ldo_sim.dim_range_max)
+                else:
+                    final_move[i] = np.random.uniform(self.ldo_sim.dim_range_min, 100.)
+
         else:
             state0 = torch.tensor(state, dtype=torch.float).to(device)
-            predictions = self.model(state0)
+            predictions = torch.tensor(self.model(state0))
             final_move = predictions.cpu().detach().numpy()
         return final_move.astype(float)
         # def get_reward(self):
@@ -135,9 +146,9 @@ class Agent:
         MaVal = 0.
         for i in range(0, len(MbVal)):
             MaVal += (2 ** i) * MbVal[i]
-        #print(MaVal)
+        # print(MaVal)
         DevaVal = 0.
         for i in range(0, len(DevbVal)):
             DevaVal += (2 ** i) * DevbVal[i]
-        #print(DevaVal)
+        # print(DevaVal)
         return int(MaVal), int(DevaVal)
