@@ -241,7 +241,7 @@ class LDO_SIM:
             axplot2.set_ydata(self.I_source_list[-1])
             fig.canvas.draw()
             fig.canvas.flush_events()
-        time.sleep(0.05)
+        time.sleep(0.1)
         os.remove(filepath + '_1.raw')
         os.remove(filepath + '_1.log')
         os.remove(filepath + '_1.op.raw')

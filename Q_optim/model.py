@@ -197,14 +197,16 @@ class Qnet(nn.Module):
 
 
 class Qtrainer:
-    def __init__(self, model, lr, gamma):
+    def __init__(self, model, lr, alpha,gamma):
         self.lr = lr
         self.gamma = gamma
+        self.alpha = alpha
         self.model = model
+        self.loss_list = []
         self.optim = optim.Adam(model.parameters(), lr=self.lr, )
-        self.criterion = nn.MSELoss(reduce='mean')
+        self.criterion = nn.MSELoss(reduce='sum')
 
-    def train_step(self, state, action, reward, next_state, game_over):
+    def train_step(self, state, action, reward, next_state):
 
         state = torch.tensor(np.array(state), dtype=torch.float).to(device)
         action = torch.tensor(np.array(action), dtype=torch.long).to(device)
@@ -223,8 +225,11 @@ class Qtrainer:
             Q_s = torch.abs(torch.tensor(self.model(state[idx]))).to(device)
             #Q_ns = Q_s.clone()
             # print("prediction\n : ", prediction)
-            maximum_reward = torch.argmax(reward)
+            maximum_reward = torch.argmax(reward).to(device)
             Q_ns = torch.abs(torch.tensor(self.model(next_state[maximum_reward]))).to(device)
+            td_target = (reward[idx] + self.gamma * Q_ns).to(device)
+            Q_new = Q_s + self.alpha * (td_target - Q_s).to(device)
+
             # print("predss next state\n : ", preds)
             #if reward[idx] < 0.:
             #    Q_ns = torch.mul(preds, (1 + abs( reward[maximum_reward])))
@@ -232,7 +237,8 @@ class Qtrainer:
             #    Q_ns = torch.mul(preds, (1 + 1 / reward[maximum_reward]))
             # print("qns\n : ", Q_ns)
             # print('Memorization step:',idx)
-            loss = self.criterion(Q_s.to(device),Q_ns.to(device))
+            loss = self.criterion(Q_s.to(device),Q_new.to(device))
             loss = Variable(loss, requires_grad=True)
+            self.loss_list.append(loss.item())
             loss.backward()
             self.optim.step()

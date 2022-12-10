@@ -45,10 +45,10 @@ class Agent:
         self.n_games = 1
         self.epsilon = 0.5  # randomness
         self.gamma = 0.95  # discount rate
-        self.alpha = 0.2  # learning rate
+        self.alpha = 0.5  # learning rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.model = Qnet(len(self.model_input)).float().to(device)
-        self.trainer = Qtrainer(self.model, lr=0.001, gamma=self.gamma)  # , alpha=self.alpha)
+        self.trainer = Qtrainer(self.model, lr=0.001, alpha=self.alpha, gamma=self.gamma)  # , alpha=self.alpha)
         self.game = None
         self.agent = None
         self.scores = []
@@ -81,7 +81,7 @@ class Agent:
             k = abs(V_d1 - V_d2)
             l = abs(max_diff - min_diff)
             rscaler = 1
-            reward -= (k * rscaler) + (l * rscaler)
+            reward += (k + l) * rscaler
             if self.V_output_max > max_v > self.V_output_min and self.V_output_min < min_v < self.V_output_max:
                 reward += 100
             if self.V_output_min < V_d1 < self.V_output_max:
@@ -108,10 +108,10 @@ class Agent:
         # print("reward:", np.array(rewards).shape)
         # print("next_state:", np.array(next_states).shape)
         time.sleep(10)
-        self.trainer.train_step(states, actions, rewards, next_states, dones)
+        self.trainer.train_step(states, actions, rewards, next_states)
 
-    def train_short_memory(self, state, action, reward, next_state, done):
-        self.trainer.train_step(state, action, reward, next_state, done)
+    def train_short_memory(self, state, action, reward, next_state):
+        self.trainer.train_step(state, action, reward, next_state)
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
