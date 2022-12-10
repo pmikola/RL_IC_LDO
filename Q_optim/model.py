@@ -49,7 +49,7 @@ class Qnet(nn.Module):
         # TODO : RL Multiregressor vs. MultiLabelClassifier vs. MultiheadBinaryClassifier vs. Mixed
 
         ############### Multiregressor ################
-        # REGRESSOR FOR W Values x 9 W vals
+
         self.conv0a = nn.Conv2d(in_channels=self.c_1, out_channels=self.c_2, kernel_size=(self.k1, self.k2), stride=(self.s, self.s),padding=self.p)
         self.conv0b = nn.Conv2d(in_channels=self.c_2, out_channels=self.c_1, kernel_size=(self.k1, self.k2), stride=(self.s, self.s),padding=self.p)
         self.conv1a = nn.Conv2d(in_channels=self.c_1, out_channels=self.c_2, kernel_size=(self.k1, self.k2), stride=(self.s, self.s),padding=self.p)
@@ -90,7 +90,7 @@ class Qnet(nn.Module):
         self.conv18b = nn.Conv2d(in_channels=self.c_2, out_channels=self.c_1, kernel_size=(self.k1, self.k2), stride=(self.s, self.s),padding=self.p)
         self.conv19a = nn.Conv2d(in_channels=self.c_1, out_channels=self.c_2, kernel_size=(self.k1, self.k2), stride=(self.s, self.s),padding=self.p)
         self.conv19b = nn.Conv2d(in_channels=self.c_2, out_channels=self.c_1, kernel_size=(self.k1, self.k2), stride=(self.s, self.s),padding=self.p)
-
+        # REGRESSOR FOR W Values x 9 W vals
         self.headW0 = nn.Linear(self.hidden_size, 1)
         self.headW1 = nn.Linear(self.hidden_size, 1)
         self.headW2 = nn.Linear(self.hidden_size, 1)
@@ -112,6 +112,7 @@ class Qnet(nn.Module):
         self.headL8 = nn.Linear(self.hidden_size, 1)
         # REGRESSOR FOR C Value
         self.headC0 = nn.Linear(self.hidden_size, 1)
+        # REGRESSOR FOR R Value
         self.headR0 = nn.Linear(self.hidden_size, 1)
         ############### Multiregressor ################
 
