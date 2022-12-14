@@ -3,7 +3,7 @@ vdd2 V+ 0 0.456
 MP1 vdd VOUT LDO_Out vdd P_50n L={Lpass} w={Wpass}
 vdd1 vdd 0 SINE(1 0.2 40k 50us 0 0 5)
 R3 vdd 0 100k
-R4 LDO_Out 0 25
+R4 LDO_Out 0 1Meg
 C1 LDO_Out 0 100p
 MP2 vdd VOUT LDO_Out vdd P_50n L={Lpass} w={Wpass}
 MP3 vdd NC_01 LDO_Out vdd P_50n L={Lpass} w={Wpass}
@@ -21,6 +21,7 @@ M6 VOUT N003 0 0 N_50n l={l6} w={w6}
 M7 N003 N003 0 0 N_50n L={l7} w={w7}
 M8 N004 N003 0 0 N_50n L={l8} w={w8}
 C2 VOUT N002 {Cm}
+I1 LDO_Out 0 PWL(10us 10uA 20us 10mA 50us 50mA 100us 100mA 150us 200mA 190us 350mA)
 .model NMOS NMOS
 .model PMOS PMOS
 .lib C:\Users\piomi\Documents\LTspiceXVII\lib\cmp\standard.mos
