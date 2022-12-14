@@ -1,14 +1,13 @@
-import random
-import time
+import os
 
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
-import os
-from numba import cuda, vectorize, guvectorize, jit, njit
+import torchcontrib
 from torch.autograd import Variable
+from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.swa_utils import AveragedModel, SWALR
 
 use_cuda = True
 device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
@@ -23,15 +22,15 @@ class Qnet(nn.Module):
         self.l_max = 10
         self.w_min = 0.05
         self.w_max = 50
-        self.w_pass_min = 10000.
-        self.w_pass_max = 25000.
+        self.w_pass_min = 30000.
+        self.w_pass_max = 55000.
         self.C_min = 1.
         self.C_max = 25.
         self.R_min = 5.
         self.R_max = 55.
         self.w_hb = 80.
-        self.c_1 = 40
-        self.c_2 = 20
+        self.c_1 = 104
+        self.c_2 = 35
         self.k1 = self.k2 = 3
         self.p = 1
         self.s = 1
@@ -39,8 +38,8 @@ class Qnet(nn.Module):
         # TODO : More degrees of freedom
         # TODO : LATENT SPACE FOR EACH OF THE HEADS??!
 
-        self.convLatentA = nn.Conv2d(in_channels=20, out_channels=31, kernel_size=(3, 3), stride=(1, 1), padding=1)
-        self.convLatentB = nn.Conv2d(in_channels=31, out_channels=20, kernel_size=(3, 3), stride=(1, 1), padding=1)
+        self.convLatentA = nn.Conv2d(in_channels=35, out_channels=52, kernel_size=(3, 3), stride=(1, 1), padding=1)
+        self.convLatentB = nn.Conv2d(in_channels=52, out_channels=35, kernel_size=(3, 3), stride=(1, 1), padding=1)
 
         self.linear1 = nn.Linear(self.input_size, self.hidden_size)
         self.linear2 = nn.Linear(self.hidden_size, self.hidden_size)
@@ -136,13 +135,14 @@ class Qnet(nn.Module):
         return [range]
 
     def forward(self, x):
-        x = x.reshape(31, 20, 1, 1)
+        #print(x.size())
+        x = x.reshape(52, 35, 1, 1)
         x = F.relu(self.convLatentA(x))
         x = F.relu(self.convLatentB(x))
         x = torch.flatten(x)
         x = self.linear1(x)
         x = self.linear2(F.dropout(x, 0.1))
-        x = x.reshape(31, 40, 1, 1)
+        x = x.reshape(35, 104, 1, 1)
         x0 = torch.flatten(self.conv0b(self.conv0a(x)))
         W0 = F.hardtanh(self.headW0(x0), self.w_min, self.w_max)
         x1 = torch.flatten(self.conv1b(self.conv1a(x)))
@@ -203,11 +203,15 @@ class Qtrainer:
         self.alpha = alpha
         self.model = model
         self.loss_list = []
-        self.optim = optim.Adam(model.parameters(), lr=self.lr, )
-        self.criterion = nn.MSELoss(reduce='sum')
-
+        #self.swa_model = AveragedModel(model)
+        self.optim = torch.optim.SGD(model.parameters(), lr=0.001)
+        #self.optim = torch.optim.Adam(model.parameters(), lr=self.lr, amsgrad=True)
+        #self.scheduler = CosineAnnealingLR(self.optim, T_max=100)
+        self.criterion = nn.MSELoss(reduce='mean')
+        #self.criterion = nn.L1Loss(reduce='mean')
     def train_step(self, state, action, reward, next_state):
 
+        global loss
         state = torch.tensor(np.array(state), dtype=torch.float).to(device)
         action = torch.tensor(np.array(action), dtype=torch.long).to(device)
         reward = torch.tensor(np.array(reward), dtype=torch.float).to(device)
@@ -220,25 +224,29 @@ class Qtrainer:
 
         self.optim.zero_grad()
         torch.set_grad_enabled(True)
+        self.model.train()
         # predicted Values
         for idx in range(0, int(np.array(state.cpu().detach().numpy()).shape[0])):
             Q_s = torch.abs(torch.tensor(self.model(state[idx]))).to(device)
+            Q_s = F.normalize(Q_s,dim=0)
             #Q_ns = Q_s.clone()
             # print("prediction\n : ", prediction)
             maximum_reward = torch.argmax(reward).to(device)
-            Q_ns = torch.abs(torch.tensor(self.model(next_state[maximum_reward]))).to(device)
-            td_target = (reward[idx] + self.gamma * Q_ns).to(device)
+            best_action = torch.tensor(action[maximum_reward])
+            Q_ns = torch.abs(torch.tensor(self.model(next_state[idx]))).to(device)
+            td_target = (self.gamma * Q_ns).to(device)
             Q_new = Q_s + self.alpha * (td_target - Q_s).to(device)
-
+            Q_new = F.normalize(Q_new,dim=0)
             # print("predss next state\n : ", preds)
-            #if reward[idx] < 0.:
-            #    Q_ns = torch.mul(preds, (1 + abs( reward[maximum_reward])))
-            #else:
-            #    Q_ns = torch.mul(preds, (1 + 1 / reward[maximum_reward]))
-            # print("qns\n : ", Q_ns)
+            # Q_ns = torch.abs(torch.tensor(self.model(next_state[maximum_reward]))).to(device)
+            # if reward[idx] < 0.:
+            #    Q_new = torch.mul(Q_ns, (1 + abs( reward[maximum_reward])))
+            # else:
+            #    Q_new = torch.mul(Q_ns, (1 + 1 / reward[maximum_reward]))
+
             # print('Memorization step:',idx)
             loss = self.criterion(Q_s.to(device),Q_new.to(device))
             loss = Variable(loss, requires_grad=True)
-            self.loss_list.append(loss.item())
+            self.loss_list.append(torch.mean(loss).item())
             loss.backward()
             self.optim.step()

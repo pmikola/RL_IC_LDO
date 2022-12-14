@@ -23,10 +23,10 @@ from env import LDO_SIM
 
 
 MAX_MEMORY = 100_000
-BATCH_SIZE = 128
+MAX_SHORT_MEMORY = 256
+BATCH_SIZE = 256
+BATCH_SIZE_SHORT = 32
 LR = 0.001
-white = True
-black = False
 # matplotlib.use('Qt5Agg')
 use_cuda = True
 device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
@@ -47,7 +47,13 @@ class Agent:
         self.gamma = 0.95  # discount rate
         self.alpha = 0.5  # learning rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
+        self.short_memory = deque(maxlen=MAX_SHORT_MEMORY)
         self.model = Qnet(len(self.model_input)).float().to(device)
+        pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        print("No. of Parametres : ", pytorch_total_params)
+        pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        print("No. of Trainable parametres : ", pytorch_total_params)
+        time.sleep(0.5)
         self.trainer = Qtrainer(self.model, lr=0.001, alpha=self.alpha, gamma=self.gamma)  # , alpha=self.alpha)
         self.game = None
         self.agent = None
@@ -73,29 +79,38 @@ class Agent:
         Voltages = agent.ldo_sim.V_source_list
         for i in range(0, len(Voltages)):
             V_d1 = np.mean(Voltages[-i])
-            V_d2 = np.mean(Voltages[-i - 1])
-            max_v = np.max(Voltages[-i])
-            min_v = np.min(Voltages[-i])
-            max_diff = abs(max_v - self.V_output_max)
-            min_diff = abs(self.V_output_min - min_v)
-            k = abs(V_d1 - V_d2)
-            l = abs(max_diff - min_diff)
-            rscaler = 1
-            reward += (k + l) * rscaler
-            if self.V_output_max > max_v > self.V_output_min and self.V_output_min < min_v < self.V_output_max:
-                reward += 100
-            if self.V_output_min < V_d1 < self.V_output_max:
-                reward += 25
-            if self.V_output_min < V_d2 < self.V_output_max:
-                reward += 25
+            # # V_d2 = np.mean(Voltages[-i - 1])
+            # max_v = np.max(Voltages[-i])
+            # min_v = np.min(Voltages[-i])
+            # k = 1 + (1 / abs(V_d1 - self.V_output))  # - V_d2)
+            # l = 1 / abs(max_v - min_v)
+            # rscaler = 2
+            # # reward += (k + l) * rscaler
+            # reward += l * rscaler
+            # if self.V_output_max > max_v > self.V_output_min and self.V_output_min < min_v < self.V_output_max:
+            #     reward += 100
+            # if self.V_output_min < V_d1 < self.V_output_max:
+            #     reward += 10
+            # # if self.V_output_min < V_d2 < self.V_output_max:
+            # #    reward += 25
+            if V_d1 < 0.:
+                reward -= 25
+
+            for j in range(0, len(Voltages[-i])):
+                if self.V_output_max > Voltages[-i][j] > self.V_output_min:
+                    reward += 1
+                else:
+                    reward -= 1
+
         return reward
 
     def get_state(self):
         state = self.ldo_sim.sim_state
         return state
 
-    def remember_state(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))  # popleft if MAX_MEMORY is reached
+    def remember_state(self, state, action, reward, next_state, dones):
+        self.memory.append((state, action, reward, next_state, dones))
+        self.short_memory.append((state, action, reward, next_state, dones))
 
     def train_long_memory(self):
         if len(self.memory) > BATCH_SIZE:
@@ -103,15 +118,15 @@ class Agent:
         else:
             mini_sample = self.memory
         states, actions, rewards, next_states, dones = zip(*mini_sample)
-        # print("state:", np.array(states[0]).shape[0])
-        # print("action:", np.array(actions).shape)
-        # print("reward:", np.array(rewards).shape)
-        # print("next_state:", np.array(next_states).shape)
-        time.sleep(10)
         self.trainer.train_step(states, actions, rewards, next_states)
 
-    def train_short_memory(self, state, action, reward, next_state):
-        self.trainer.train_step(state, action, reward, next_state)
+    def train_short_memory(self):
+        if len(self.short_memory) > BATCH_SIZE_SHORT:
+            mini_sample = random.sample(self.short_memory, BATCH_SIZE_SHORT)  # list of tuples
+        else:
+            mini_sample = self.short_memory
+        states, actions, rewards, next_states, dones = zip(*mini_sample)
+        self.trainer.train_step(states, actions, rewards, next_states)
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
@@ -127,6 +142,7 @@ class Agent:
                     final_move[i] = np.random.uniform(self.ldo_sim.dim_range_min, 100.)
 
         else:
+            self.model.train()
             state0 = torch.tensor(state, dtype=torch.float).to(device)
             predictions = torch.tensor(self.model(state0))
             final_move = predictions.cpu().detach().numpy()

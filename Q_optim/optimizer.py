@@ -6,7 +6,8 @@ from matplotlib.animation import FuncAnimation
 
 from env import LDO_SIM
 from agent import Agent
-
+# torch.manual_seed(2022)
+# np.random.seed(2022)
 
 def train():
     # INIT
@@ -16,7 +17,7 @@ def train():
     done = 0
     ldo_sim = LDO_SIM()
     ldo_sim.generate_output_dim()
-    ldo_sim.play_step(0, [0.], [0.])
+    ldo_sim.play_step(0, [0.], [0.],[0.])
     agent = Agent(ldo_sim)
     agent.define_goals(0.5, 350, 0.001, 0.1)
     # INIT
@@ -32,15 +33,16 @@ def train():
         # var_transmutation = agent.ldo_sim.ch_value * MaVal
         # print("TRANSMUTATION VAL",var_transmutation)
         reward = agent.ldo_sim.set_current_var(final_move, reward)
-        agent.ldo_sim.play_step(1, agent.scores, agent.mean_scores)
+        agent.ldo_sim.play_step(1, agent.scores, agent.mean_scores,agent.trainer.loss_list)
         # # make a judgment about those moves
         reward = agent.rate_this_state(agent, reward)
         # take new state
         state_new = agent.get_state()
-        # # train short memory
-        # agent.train_short_memory(state_old, final_move, reward, state_new, done)
-        # # # remember your actions and states
-        agent.remember_state(state_old, final_move, reward, state_new, done)
+        # remember
+        agent.remember_state(state_old, final_move, reward, state_new,done)
+        # train short memory
+        agent.train_short_memory()
+
 
         i_counter += 1
         if reward > record or i_counter > 10:
@@ -63,7 +65,7 @@ def train():
                 record = agent.scores[-1]
                 agent.model.save()
             print('Game', agent.n_games, 'Score', agent.scores[-1], 'Record:', record)
-            ldo_sim.play_step(1, agent.scores, agent.mean_scores)
+            ldo_sim.play_step(1, agent.scores, agent.mean_scores,agent.trainer.loss_list)
             done = 0
             # print(agent.ldo_sim.state_var_str)
             ldo_sim = LDO_SIM()
