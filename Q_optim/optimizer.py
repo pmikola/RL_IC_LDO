@@ -6,8 +6,8 @@ from matplotlib.animation import FuncAnimation
 
 from env import LDO_SIM
 from agent import Agent
-# torch.manual_seed(2022)
-# np.random.seed(2022)
+torch.manual_seed(2022)
+np.random.seed(2022)
 
 def train():
     # INIT
@@ -45,7 +45,7 @@ def train():
 
 
         i_counter += 1
-        if reward > record or i_counter > 10:
+        if reward > record or i_counter > 20:
             done = 1
             i_counter = 0
         print("REWARD : ", reward)
@@ -64,7 +64,7 @@ def train():
             if agent.scores[-1] > record:
                 record = agent.scores[-1]
                 agent.model.save()
-            print('Game', agent.n_games, 'Score', agent.scores[-1], 'Record:', record)
+            print('Sim Cycle : ', agent.n_games, 'Score : ', agent.scores[-1], 'Record : ', record)
             ldo_sim.play_step(1, agent.scores, agent.mean_scores,agent.trainer.loss_list)
             done = 0
             # print(agent.ldo_sim.state_var_str)

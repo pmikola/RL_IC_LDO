@@ -23,9 +23,9 @@ from env import LDO_SIM
 
 
 MAX_MEMORY = 100_000
-MAX_SHORT_MEMORY = 256
-BATCH_SIZE = 256
-BATCH_SIZE_SHORT = 32
+MAX_SHORT_MEMORY = 4
+BATCH_SIZE = 128
+BATCH_SIZE_SHORT = 2
 LR = 0.001
 # matplotlib.use('Qt5Agg')
 use_cuda = True
@@ -93,14 +93,14 @@ class Agent:
             #     reward += 10
             # # if self.V_output_min < V_d2 < self.V_output_max:
             # #    reward += 25
-            if V_d1 < 0.:
-                reward -= 25
+            if V_d1 > 0.:
+                reward += 5
 
             for j in range(0, len(Voltages[-i])):
                 if self.V_output_max > Voltages[-i][j] > self.V_output_min:
                     reward += 1
                 else:
-                    reward -= 1
+                    reward -= 0
 
         return reward
 

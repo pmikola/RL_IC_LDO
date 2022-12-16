@@ -161,7 +161,7 @@ class LDO_SIM:
 
         LTC.set_component_value('R4', '1Meg')
         LTC.set_component_value('R5', '{Rset}')
-        LTC.set_element_model("I1", "PWL(10us 100uA 20us 10mA 50us 50mA 100us 100mA 150us 200mA 190us 350mA)")
+        LTC.set_element_model("I1", "PWL(0us 100uA 20us 1000uA 30us 10mA 50us 50mA 100us 100mA 150us 200mA 190us 350mA)")
         LTC.add_instructions(
             # PARAMS
             ".param Wpass=" + self.w_pass + "u" + " Lpass="+self.l_pass+"u",
@@ -248,6 +248,7 @@ class LDO_SIM:
 
             self.dwt_list.append(self.dwt_temp)
             #print(self.dwt_list[i])
+
             if plot_option == 1:
                 axplot1, = ax1.plot(t * 1. * 10 ** 6, Vs,'r')
                 axplot2, = ax2.plot(t * 1. * 10 ** 6, Is, 'b--')
@@ -266,8 +267,6 @@ class LDO_SIM:
         LDO_SIM.get_current_var_state(self)
         self.current_state_var = np.array(self.state_var_str).astype(np.float)
         self.sim_state = self.current_state_var
-        max_v,max_v_old = 0.,0.
-        min_v,min_v_old = 0.,0.
         for i in range(0,len(self.V_source_list)):
             self.sim_state = np.concatenate([self.sim_state,self.V_source_list[i]])
             self.sim_state = np.concatenate([self.sim_state,self.cwt_list[i][0]])
@@ -291,13 +290,14 @@ class LDO_SIM:
             ax1.set_xlabel('Time [us]')
             ax1.set_ylabel('Voltage [V]')
             ax2.set_ylabel('Current [A]')
+            ax2.set_yscale('log')
 
             axplot3, = ax3.plot(scores,'white')
             axplot4, = ax3.plot(mean_scores, 'g')
             ax3.set_xlabel('No. Steps')
             ax3.set_ylabel('Reward')
             # ax3.set_yscale('log')
-            # ax4.set_yscale('log')
+
             axplot3.set_ydata(scores)#
             axplot4.set_ydata(mean_scores)
             if len(self.V_source_list) > 1:
@@ -317,6 +317,7 @@ class LDO_SIM:
             ax4.tick_params(axis='y', colors='orange')
             ax4.yaxis.label.set_color('orange')
             ax4.set_ylabel('Loss')
+            ax4.set_yscale('log')
 
             ax5.set_xlabel('Freq components')
             ax5.set_ylabel('Real')
