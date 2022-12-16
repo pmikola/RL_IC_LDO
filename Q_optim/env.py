@@ -92,28 +92,6 @@ class LDO_SIM:
         self.state_var_str.append(self.Rset)
 
     def set_current_var(self,values,reward):
-        for i in range(0,len(values)):
-            if float(values[i]) <= float(self.ch_value):
-                values[i] = self.ch_value
-                reward -=1
-            if float(values[i]) >= float(self.dim_range_max):
-                values[i] = self.dim_range_max
-                reward -=1
-            if i == 8: # wpass
-                if float(values[i])<= 10000.:
-                    values[i] = 10000.
-                    reward -= 1
-                else:
-                    pass
-            else:
-                if values[i] <=30 and i < 8:
-                    reward +=1
-                else:
-                    pass
-                if values[i] <= 5 and i > 8:
-                    reward += 1
-                else:
-                    pass
 
         self.w_change1 = str(values[0])
         self.w_change2 = str(values[1])

@@ -19,7 +19,7 @@ def train():
     ldo_sim.generate_output_dim()
     ldo_sim.play_step(0, [0.], [0.],[0.])
     agent = Agent(ldo_sim)
-    agent.define_goals(0.5, 350, 0.001, 0.1)
+    agent.define_goals(0.5, 350, 0.001, 0.2)
     # INIT
     i_counter = 0
     while True:
@@ -32,6 +32,7 @@ def train():
         # MaVal, DevaVal = agent.b2val(MbVal, DevbVal)
         # var_transmutation = agent.ldo_sim.ch_value * MaVal
         # print("TRANSMUTATION VAL",var_transmutation)
+
         reward = agent.ldo_sim.set_current_var(final_move, reward)
         agent.ldo_sim.play_step(1, agent.scores, agent.mean_scores,agent.trainer.loss_list)
         # # make a judgment about those moves

@@ -23,9 +23,9 @@ from env import LDO_SIM
 
 
 MAX_MEMORY = 100_000
-MAX_SHORT_MEMORY = 4
+MAX_SHORT_MEMORY = 32
 BATCH_SIZE = 128
-BATCH_SIZE_SHORT = 2
+BATCH_SIZE_SHORT = 16
 LR = 0.001
 # matplotlib.use('Qt5Agg')
 use_cuda = True
@@ -145,7 +145,8 @@ class Agent:
             self.model.train()
             state0 = torch.tensor(state, dtype=torch.float).to(device)
             predictions = torch.tensor(self.model(state0))
-            final_move = predictions.cpu().detach().numpy()
+            preds = predictions[0]*predictions[1]
+            final_move = preds.cpu().detach().numpy()
         return final_move.astype(float)
         # def get_reward(self):
 
