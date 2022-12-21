@@ -24,7 +24,7 @@ from env import LDO_SIM
 
 MAX_MEMORY = 100_000
 MAX_SHORT_MEMORY = 32
-BATCH_SIZE = 128
+BATCH_SIZE = 256
 BATCH_SIZE_SHORT = 16
 LR = 0.001
 # matplotlib.use('Qt5Agg')
@@ -48,7 +48,7 @@ class Agent:
         self.alpha = 0.5  # learning rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.short_memory = deque(maxlen=MAX_SHORT_MEMORY)
-        self.model = Qnet(len(self.model_input)).float().to(device)
+        self.model = Qnet(len(self.model_input), 12).float().to(device)
         pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print("No. of Parametres : ", pytorch_total_params)
         pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
@@ -94,8 +94,7 @@ class Agent:
             # # if self.V_output_min < V_d2 < self.V_output_max:
             # #    reward += 25
             if V_d1 > 0.:
-                reward += 5
-
+                reward += 15
             for j in range(0, len(Voltages[-i])):
                 if self.V_output_max > Voltages[-i][j] > self.V_output_min:
                     reward += 1
@@ -133,20 +132,29 @@ class Agent:
         # print(len(state)) # 3787
 
         self.epsilon = 80 - self.n_games
-        final_move = self.ldo_sim.output_shape
-        if random.randint(0, 200) < self.epsilon:
-            for i in range(0, len(self.ldo_sim.output_shape)):
-                if i == 8:
-                    final_move[i] = np.random.uniform(10000., self.ldo_sim.dim_range_max)
-                else:
-                    final_move[i] = np.random.uniform(self.ldo_sim.dim_range_min, 100.)
+        preds = []
+        self.model.train()
+        state0 = torch.tensor(state, dtype=torch.float).to(device)
+        predictions = self.model(state0)
 
+        if random.randint(0, 1) < self.epsilon:
+            for i in range(len(self.model.const)):
+                n = random.randint(0, self.model.no_bits)
+                m = self.model.no_bits - n
+                print(predictions[i].numpy())
+                predictions[i] = np.ones(n + m)
+                predictions[i][:m] = 0
+                np.random.shuffle(predictions[i])
+                preds.append(self.b2val(predictions[i]) * self.model.const[i])
+            final_move = np.array(preds)
+            print("Random Choice")
         else:
-            self.model.train()
-            state0 = torch.tensor(state, dtype=torch.float).to(device)
-            predictions = torch.tensor(self.model(state0))
-            preds = predictions[0]*predictions[1]
-            final_move = preds.cpu().detach().numpy()
+            for i in range(len(self.model.const)):
+                self.twopass(predictions[i], 0.5, 0., 1, 0)
+                preds.append(self.b2val(predictions[i]) * self.model.const[i])
+            final_move = np.array(preds)
+            print("Model Choice")
+
         return final_move.astype(float)
         # def get_reward(self):
 
@@ -159,13 +167,15 @@ class Agent:
         return MbVal, DevbVal, stop_bit
 
     @staticmethod
-    def b2val(MbVal, DevbVal):
+    def b2val(MbVal):
         MaVal = 0.
         for i in range(0, len(MbVal)):
             MaVal += (2 ** i) * MbVal[i]
         # print(MaVal)
-        DevaVal = 0.
-        for i in range(0, len(DevbVal)):
-            DevaVal += (2 ** i) * DevbVal[i]
-        # print(DevaVal)
-        return int(MaVal), int(DevaVal)
+        return float(MaVal)
+
+    @staticmethod
+    def twopass(data, upper_threshold, lower_threshold, default_value1, default_value2):
+        data[data > upper_threshold] = default_value1
+        data[data < lower_threshold] = default_value2
+        return data

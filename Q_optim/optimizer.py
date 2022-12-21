@@ -19,7 +19,7 @@ def train():
     ldo_sim.generate_output_dim()
     ldo_sim.play_step(0, [0.], [0.],[0.])
     agent = Agent(ldo_sim)
-    agent.define_goals(0.5, 350, 0.001, 0.2)
+    agent.define_goals(0.5, 350, 0.001, 0.1)
     # INIT
     i_counter = 0
     while True:
