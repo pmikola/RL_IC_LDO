@@ -157,7 +157,7 @@ class LDO_SIM:
         LTC.add_instructions(
             # STATIC PARAMS
             ".include cmosedu_models.txt",
-            ".tran 0 200u 0 5n",
+            ".tran 0 200u 0 10n",
             ".options temp 26.85",
             ".options plotwinsize 128"
             #".step temp -40 125 100", # temperature sweep

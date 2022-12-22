@@ -126,7 +126,7 @@ class Agent:
         self.model.train()
         state0 = torch.tensor(state, dtype=torch.float).to(device)
         predictions = self.model(state0)
-        if random.randint(0, 1) < self.epsilon:
+        if random.randint(0, 200) < self.epsilon:
             for i in range(len(self.model.const)):
                 n = random.randint(0, self.model.no_bits)
                 m = self.model.no_bits - n
@@ -146,17 +146,20 @@ class Agent:
             return final_move.astype(float), np.array(predictions_r).astype(float)
         else:
             for i in range(len(self.model.const)):
-                self.twopass(predictions[i], 0.5, 0., 1, 0)
-                if np.all(predictions[i] == 0.):
+                p = predictions[i].cpu().detach().numpy()
+                self.twopass(p, 0.5, 0., 1, 0)
+
+                if np.all(p == 0.):
                     preds.append(self.model.const[i])
                 else:
-                    aVal = self.b2val(predictions[i])
+                    aVal = self.b2val(p)
                     aVal = 2 * self.model.no_bits / aVal
                     preds.append(aVal * self.model.const[i])
+                predictions_r.append(p)
             final_move = np.array(preds)
             print("Model Choice")
 
-            return final_move.astype(float), predictions.astype(float)
+            return final_move.astype(float), np.array(predictions_r).astype(float)
         # def get_reward(self):
 
     def onet2b(self, final_move):
@@ -170,7 +173,7 @@ class Agent:
     @staticmethod
     def b2val(MbVal):
         MaVal = 0.
-        for i in range(0, len(MbVal)):
+        for i in range(0, MbVal.shape[0]):
             MaVal += (2 ** i) * MbVal[i]
         # print(MaVal)
         return float(MaVal)
@@ -179,4 +182,3 @@ class Agent:
     def twopass(data, upper_threshold, lower_threshold, default_value1, default_value2):
         data[data > upper_threshold] = default_value1
         data[data < lower_threshold] = default_value2
-        return data
