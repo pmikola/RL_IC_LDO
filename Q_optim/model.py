@@ -1,4 +1,16 @@
+########################### BELLMAN EQUATiON ##############################
+# NewQ(state,action) = Q(state,action) + lr[R(state,action) + gamma*maxQ'(state',action') - Q(state,action(]
+# NewQ(state,action) - New Q vale for that state and action
+# Q(state,action) - current Q value in state and action
+# lr - learning rate
+# R(state,action) - reward for taking that action and that state
+# gamma- discount rate
+# maxQ'(state',action') - Maximum expected future reward for given new state and all possible actions at that new state
+########################### BELLMAN EQUATiON ##############################
+
+
 import os
+import time
 
 import numpy as np
 import torch
@@ -12,7 +24,6 @@ from nupic.torch.modules import (
     KWinners2d, KWinners, SparseWeights, SparseWeights2d, Flatten,
     rezero_weights, update_boost_strength
 )
-
 import nupic.torch.functions as FF
 
 use_cuda = True
@@ -20,7 +31,7 @@ device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "c
 
 
 class Qnet(nn.Module):
-    def __init__(self, input_size,no_bits):
+    def __init__(self, input_size, no_bits):
         super().__init__()
         self.input_size = input_size
         self.hidden_size = self.input_size
@@ -392,6 +403,7 @@ class Qnet(nn.Module):
 
     def forward(self, x):
         # print(x.size())
+
         x = x.reshape(13, 35, 2, 2)
         x = self.convLAWinn(self.convLatentA(x))
         x = self.convLBWinn(self.convLatentB(x))
@@ -399,101 +411,101 @@ class Qnet(nn.Module):
 
         x0 = torch.flatten(self.conv0b(self.conv0a(x)))
         x0 = self.headX0(x0)
-        W0 = self.headW0(x0)
+        W0 = torch.sigmoid(self.headW0(x0))
         W0c = self.w_max
 
         x1 = torch.flatten(self.conv1b(self.conv1a(x)))
         x1 = self.headX1(x1)
-        W1 = self.headW1(x1)
+        W1 = torch.sigmoid(self.headW1(x1))
         W1c = self.w_hb
 
         x2 = torch.flatten(self.conv2b(self.conv2a(x)))
         x2 = self.headX2(x2)
-        W2 = self.headW2(x2)
+        W2 = torch.sigmoid(self.headW2(x2))
         W2c = self.w_max
 
         x3 = torch.flatten(self.conv3b(self.conv3a(x)))
         x3 = self.headX3(x3)
-        W3 = self.headW3(x3)
+        W3 = torch.sigmoid(self.headW3(x3))
         W3c = self.w_max
         x4 = torch.flatten(self.conv4b(self.conv4a(x)))
         x4 = self.headX4(x4)
-        W4 = self.headW4(x4)
+        W4 = torch.sigmoid(self.headW4(x4))
         W4c = self.w_max
 
         x5 = torch.flatten(self.conv5b(self.conv5a(x)))
         x5 = self.headX5(x5)
-        W5 = self.headW5(x5)
+        W5 = torch.sigmoid(self.headW5(x5))
         W5c = self.w_hb
 
         x6 = torch.flatten(self.conv6b(self.conv6a(x)))
         x6 = self.headX6(x6)
-        W6 = self.headW6(x6)
+        W6 = torch.sigmoid(self.headW6(x6))
         W6c = self.w_max
 
         x7 = torch.flatten(self.conv7b(self.conv7a(x)))
         x7 = self.headX7(x7)
-        W7 = self.headW7(x7)
+        W7 = torch.sigmoid(self.headW7(x7))
         W7c = self.w_max
 
         x8 = torch.flatten(self.conv8b(self.conv8a(x)))
         x8 = self.headX8(x8)
-        W8 = self.headW8(x8)
+        W8 = torch.sigmoid(self.headW8(x8))
         W8c = self.w_pass_max
 
         x9 = torch.flatten(self.conv9b(self.conv9a(x)))
         x9 = self.headX9(x9)
-        L0 = self.headL0(x9)
+        L0 = torch.sigmoid(self.headL0(x9))
         L0c = self.l_max
 
         x10 = torch.flatten(self.conv10b(self.conv10a(x)))
         x10 = self.headX10(x10)
-        L1 = self.headL1(x10)
+        L1 = torch.sigmoid(self.headL1(x10))
         L1c = self.l_max
 
         x11 = torch.flatten(self.conv11b(self.conv11a(x)))
         x11 = self.headX11(x11)
-        L2 = self.headL2(x11)
+        L2 = torch.sigmoid(self.headL2(x11))
         L2c = self.l_max
 
         x12 = torch.flatten(self.conv12b(self.conv12a(x)))
         x12 = self.headX12(x12)
-        L3 = self.headL3(x12)
+        L3 = torch.sigmoid(self.headL3(x12))
         L3c = self.l_max
 
         x13 = torch.flatten(self.conv13b(self.conv13a(x)))
         x13 = self.headX13(x13)
-        L4 =  self.headL4(x13)
+        L4 = torch.sigmoid(self.headL4(x13))
         L4c = self.l_max
 
         x14 = torch.flatten(self.conv14b(self.conv14a(x)))
         x14 = self.headX14(x14)
-        L5 = self.headL5(x14)
+        L5 = torch.sigmoid(self.headL5(x14))
         L5c = self.l_max
 
         x15 = torch.flatten(self.conv15b(self.conv15a(x)))
         x15 = self.headX15(x15)
-        L6 = self.headL6(x15)
+        L6 = torch.sigmoid(self.headL6(x15))
         L6c = self.l_max
 
         x16 = torch.flatten(self.conv16b(self.conv16a(x)))
         x16 = self.headX16(x16)
-        L7 = self.headL7(x16)
+        L7 = torch.sigmoid(self.headL7(x16))
         L7c = self.l_max
 
         x17 = torch.flatten(self.conv17b(self.conv17a(x)))
         x17 = self.headX17(x17)
-        L8 = self.headL8(x17)
+        L8 = torch.sigmoid(self.headL8(x17))
         L8c = self.l_max
 
         x18 = torch.flatten(self.conv18b(self.conv18a(x)))
         x18 = self.headX18(x18)
-        C0 = self.headC0(x18)
+        C0 = torch.sigmoid(self.headC0(x18))
         C0c = self.C_max
 
         x19 = torch.flatten(self.conv19b(self.conv19a(x)))
         x19 = self.headX19(x19)
-        R0 = self.headR0(x19)
+        R0 = torch.sigmoid(self.headR0(x19))
         R0c = self.R_max
 
         self.const = [W0c, W1c, W2c, W3c, W4c, W5c, W6c, W7c, W8c, L0c, L1c, L2c, L3c, L4c, L5c, L6c, L7c, L8c, C0c,
@@ -526,52 +538,52 @@ class Qtrainer:
         # self.criterion = nn.BCELoss(reduce='mean')
 
     def train_step(self, state, action, reward, next_state):
-        global loss
+        global loss, loss_t
 
-        state = torch.tensor(np.array(state), dtype=torch.float).to(device)
-        action = torch.tensor(np.array(action), dtype=torch.float).to(device)
-        reward = torch.tensor(np.array(reward), dtype=torch.float).to(device)
-        next_state = torch.tensor(np.array(next_state), dtype=torch.float).to(device)
+        state = torch.tensor(np.array(state), dtype=torch.float32).to(device)
+        action = torch.tensor(np.array(action), dtype=torch.float32).to(device)
+        reward = torch.tensor(np.array(reward), dtype=torch.float32).to(device)
+        next_state = torch.tensor(np.array(next_state), dtype=torch.float32).to(device)
         # game_over = torch.tensor(np.array(game_over), dtype=torch.float).to(device)
         # print("state:", state, state.size())
         # print("action:", action, action.size())
         # print("reward:", reward)
         # print("next_state:", next_state.size())
-        print(action)
+
         self.optim.zero_grad()
         torch.set_grad_enabled(True)
         self.model.train()
         # predicted Values
+
+        ################# Standard Q Learning Equation #####################
+        #
+        # Qnew (state(t),action(t)) <-
+        # <- Q(state(t),action(t)) + alpha * (REWARD(t) + gamma *
+        #  * maxQ(state(t+1),actions) - Q(state(t),action(t))
+
+        ################# Standard Q Learrning Equation #####################
+
         for idx in range(0, int(np.array(state.cpu().detach().numpy()).shape[0])):
-            Q_s, const = torch.tensor(self.model(state[idx])).to(device)
             # Q_s = F.normalize(Q_s, dim=0)
-            # Q_ns = Q_s.clone()
-            # print("prediction\n : ", prediction)
-            maximum_reward = torch.argmax(reward).to(device)
-            # Q_ns = torch.tensor(action[maximum_reward])
-
-            Q_ns = action[maximum_reward] / const
-            # Q_ns = torch.tensor(self.model(next_state[maximum_reward])[1]).to(device)
-            # td_target = (reward[idx]+ self.gamma * Q_ns).to(device)
-            # Q_new = Q_s + self.alpha * (td_target - Q_s).to(device)
-            # print(Q_ns)
-            # Q_new = F.normalize(Q_new, dim=0)
-            # print("predss next state\n : ", preds)
-            # Q_ns = torch.abs(torch.tensor(self.model(next_state[maximum_reward]))).to(device)
-            # if reward[idx] < 0.:
-            #    Q_new = torch.mul(Q_ns, (1 + abs( reward[maximum_reward])))
-            # else:
-            #    Q_new = torch.mul(Q_ns, (1 + 1 / reward[maximum_reward]))
-
-            # print('Memorization step:',idx)
-            # print(Q_s)
+            prediction = self.model(state[idx])
+            next_prediction = self.model(next_state[idx])
+            target = prediction
+            next_pred_max, next_pred_argmax = torch.topk(next_prediction[idx], int(self.model.no_bits / 2))
+            Q_new = self.alpha * (reward[idx] + self.gamma * next_prediction[idx][next_pred_argmax])
+            action_max, action_argmax = torch.topk(action[idx], int(self.model.no_bits / 2))
+            target[idx][action_argmax] = Q_new
 
             # for j in range(0, len(Q_s)):
-            loss = self.criterion(Q_s.to(device), Q_ns.to(device))
-            loss = Variable(loss, requires_grad=True)
-            self.loss_list.append(torch.mean(loss).item())
-            loss.backward()
-            self.optim.step()
-            # if maximum_reward == idx:
-            self.model.apply(update_boost_strength)
+            if idx == 0:
+                loss = self.criterion(target[idx].to(device), prediction[idx].to(device))
+                loss = Variable(loss, requires_grad=True)
+            else:
+                loss_t = self.criterion(target[idx].to(device), prediction[idx].to(device))
+                loss = loss + Variable(loss_t, requires_grad=True)
+
+        self.loss_list.append(loss.item())
+        loss.backward()
+        self.optim.step()
+        # if maximum_reward == idx:
+        self.model.apply(update_boost_strength)
         self.model.apply(rezero_weights)

@@ -11,17 +11,6 @@ from collections import deque  # datastructure to store memory vals
 from Q_optim.model import Qnet, Qtrainer
 from env import LDO_SIM
 
-########################### BELLMAN EQUATiON ##############################
-# NewQ(state,action) = Q(state,action) + lr[R(state,action) + gamma*maxQ'(state',action') - Q(state,action(]
-# NewQ(state,action) - New Q vale for that state and action
-# Q(state,action) - current Q value in state and action
-# lr - learning rate
-# R(state,action) - reward for thaking that action and that state
-# gamma- discount rate
-# maxQ'(state',action') - Maximum expected future reward for given new state and all possible actions at that new state
-########################### BELLMAN EQUATiON ##############################
-
-
 MAX_MEMORY = 100_000
 MAX_SHORT_MEMORY = 32
 BATCH_SIZE = 256
@@ -133,29 +122,41 @@ class Agent:
 
         self.epsilon = 80 - self.n_games
         preds = []
+        predictions_r = []
         self.model.train()
         state0 = torch.tensor(state, dtype=torch.float).to(device)
         predictions = self.model(state0)
-
         if random.randint(0, 1) < self.epsilon:
             for i in range(len(self.model.const)):
                 n = random.randint(0, self.model.no_bits)
                 m = self.model.no_bits - n
-                print(predictions[i].numpy())
-                predictions[i] = np.ones(n + m)
-                predictions[i][:m] = 0
-                np.random.shuffle(predictions[i])
-                preds.append(self.b2val(predictions[i]) * self.model.const[i])
+                p = np.ones(n + m)
+                p[:m] = 0
+                np.random.shuffle(p)
+                predictions_r.append(p)
+                if np.all(p == 0.):
+                    preds.append(self.model.const[i])
+                else:
+                    aVal = self.b2val(p)
+                    aVal = 2 * self.model.no_bits / aVal
+                    preds.append(aVal * self.model.const[i])
+
             final_move = np.array(preds)
             print("Random Choice")
+            return final_move.astype(float), np.array(predictions_r).astype(float)
         else:
             for i in range(len(self.model.const)):
                 self.twopass(predictions[i], 0.5, 0., 1, 0)
-                preds.append(self.b2val(predictions[i]) * self.model.const[i])
+                if np.all(predictions[i] == 0.):
+                    preds.append(self.model.const[i])
+                else:
+                    aVal = self.b2val(predictions[i])
+                    aVal = 2 * self.model.no_bits / aVal
+                    preds.append(aVal * self.model.const[i])
             final_move = np.array(preds)
             print("Model Choice")
 
-        return final_move.astype(float)
+            return final_move.astype(float), predictions.astype(float)
         # def get_reward(self):
 
     def onet2b(self, final_move):
