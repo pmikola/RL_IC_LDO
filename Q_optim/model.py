@@ -78,7 +78,7 @@ class Qnet(nn.Module):
         #     sparsity=self.SPARSITY_CNN)
         # self.convLBWinn = KWinners2d(channels=35, percent_on=self.PERCENT_ON, boost_strength=self.BOOST_STRENGTH)
 
-        self.linear1 = nn.Linear(self.input_size, int(self.hidden_size / self.fac))
+        self.linear1 = nn.Linear(self.input_size, self.hidden_size)
         # self.linear2 = nn.Linear(self.hidden_size, self.hidden_size)
         # LATENT NON-LINEAR SHARED SPACE MAPPING
 
@@ -274,87 +274,87 @@ class Qnet(nn.Module):
         #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON,
         #              boost_strength=self.BOOST_STRENGTH))
         #
-        # self.headX0 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        #
-        # self.headX1 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX2 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX3 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX4 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX5 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX6 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX7 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX8 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX9 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX10 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX11 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX12 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX13 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX14 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX15 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX16 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX17 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX18 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
-        # self.headX19 = nn.Sequential(
-        #     SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
-        #     KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
-        #              boost_strength=self.BOOST_STRENGTH))
+        self.headX0 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+
+        self.headX1 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX2 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX3 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX4 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX5 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX6 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX7 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX8 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX9 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX10 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX11 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX12 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX13 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX14 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX15 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX16 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX17 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX18 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headX19 = nn.Sequential(
+            SparseWeights(nn.Linear(self.hidden_size, int(self.hidden_size / self.fac)), sparsity=self.SPARSITY),
+            KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
 
         # REGRESSOR FOR W Values x 9 W vals
         self.headW0 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
@@ -404,110 +404,110 @@ class Qnet(nn.Module):
     def forward(self, x):
         # print(x.size())
 
-        x = x.reshape(13, 35, 2, 2)
+        x = x.reshape(13, 35, 2, 2)##
         # x = self.convLAWinn(self.convLatentA(x))
         # x = self.convLBWinn(self.convLatentB(x))
         # x = F.layer_norm(x,[35, 2, 2])
         x = torch.flatten(x)
         x = self.linear1(x)
         # x0 = torch.flatten(self.conv0b(self.conv0a(x)))
-        # x0 = self.headX0(x0)
-        W0 = torch.sigmoid(self.headW0(x))
+        x0 = self.headX0(x)
+        W0 = torch.sigmoid(self.headW0(x0))
         W0c = self.w_max
 
         # x1 = torch.flatten(self.conv1b(self.conv1a(x)))
-        # x1 = self.headX1(x1)
-        W1 = torch.sigmoid(self.headW1(x))
+        x1 = self.headX1(x)
+        W1 = torch.sigmoid(self.headW1(x1))
         W1c = self.w_hb
 
         # x2 = torch.flatten(self.conv2b(self.conv2a(x)))
-        # x2 = self.headX2(x2)
-        W2 = torch.sigmoid(self.headW2(x))
+        x2 = self.headX2(x)
+        W2 = torch.sigmoid(self.headW2(x2))
         W2c = self.w_max
 
         # x3 = torch.flatten(self.conv3b(self.conv3a(x)))
-        # x3 = self.headX3(x3)
-        W3 = torch.sigmoid(self.headW3(x))
+        x3 = self.headX3(x)
+        W3 = torch.sigmoid(self.headW3(x3))
         W3c = self.w_max
 
         # x4 = torch.flatten(self.conv4b(self.conv4a(x)))
-        # x4 = self.headX4(x4)
-        W4 = torch.sigmoid(self.headW4(x))
+        x4 = self.headX4(x)
+        W4 = torch.sigmoid(self.headW4(x4))
         W4c = self.w_max
 
         # x5 = torch.flatten(self.conv5b(self.conv5a(x)))
-        # x5 = self.headX5(x5)
-        W5 = torch.sigmoid(self.headW5(x))
+        x5 = self.headX5(x)
+        W5 = torch.sigmoid(self.headW5(x5))
         W5c = self.w_hb
 
         # x6 = torch.flatten(self.conv6b(self.conv6a(x)))
-        # x6 = self.headX6(x6)
-        W6 = torch.sigmoid(self.headW6(x))
+        x6 = self.headX6(x)
+        W6 = torch.sigmoid(self.headW6(x6))
         W6c = self.w_max
 
         # x7 = torch.flatten(self.conv7b(self.conv7a(x)))
-        # x7 = self.headX7(x7)
-        W7 = torch.sigmoid(self.headW7(x))
+        x7 = self.headX7(x)
+        W7 = torch.sigmoid(self.headW7(x7))
         W7c = self.w_max
 
         # x8 = torch.flatten(self.conv8b(self.conv8a(x)))
-        # x8 = self.headX8(x8)
-        W8 = torch.sigmoid(self.headW8(x))
+        x8 = self.headX8(x)
+        W8 = torch.sigmoid(self.headW8(x8))
         W8c = self.w_pass_max
 
         # x9 = torch.flatten(self.conv9b(self.conv9a(x)))
-        # x9 = self.headX9(x9)
-        L0 = torch.sigmoid(self.headL0(x))
+        x9 = self.headX9(x)
+        L0 = torch.sigmoid(self.headL0(x9))
         L0c = self.l_max
 
         # x10 = torch.flatten(self.conv10b(self.conv10a(x)))
-        # x10 = self.headX10(x10)
-        L1 = torch.sigmoid(self.headL1(x))
+        x10 = self.headX10(x)
+        L1 = torch.sigmoid(self.headL1(x10))
         L1c = self.l_max
 
         # x11 = torch.flatten(self.conv11b(self.conv11a(x)))
-        # x11 = self.headX11(x11)
-        L2 = torch.sigmoid(self.headL2(x))
+        x11 = self.headX11(x)
+        L2 = torch.sigmoid(self.headL2(x11))
         L2c = self.l_max
 
         # x12 = torch.flatten(self.conv12b(self.conv12a(x)))
-        # x12 = self.headX12(x12)
-        L3 = torch.sigmoid(self.headL3(x))
+        x12 = self.headX12(x)
+        L3 = torch.sigmoid(self.headL3(x12))
         L3c = self.l_max
 
         # x13 = torch.flatten(self.conv13b(self.conv13a(x)))
-        # x13 = self.headX13(x13)
-        L4 = torch.sigmoid(self.headL4(x))
+        x13 = self.headX13(x)
+        L4 = torch.sigmoid(self.headL4(x13))
         L4c = self.l_max
 
         # x14 = torch.flatten(self.conv14b(self.conv14a(x)))
-        # x14 = self.headX14(x14)
-        L5 = torch.sigmoid(self.headL5(x))
+        x14 = self.headX14(x)
+        L5 = torch.sigmoid(self.headL5(x14))
         L5c = self.l_max
 
         # x15 = torch.flatten(self.conv15b(self.conv15a(x)))
-        # x15 = self.headX15(x15)
-        L6 = torch.sigmoid(self.headL6(x))
+        x15 = self.headX15(x)
+        L6 = torch.sigmoid(self.headL6(x15))
         L6c = self.l_max
 
         # x16 = torch.flatten(self.conv16b(self.conv16a(x)))
-        # x16 = self.headX16(x16)
-        L7 = torch.sigmoid(self.headL7(x))
+        x16 = self.headX16(x)
+        L7 = torch.sigmoid(self.headL7(x16))
         L7c = self.l_max
 
         # x17 = torch.flatten(self.conv17b(self.conv17a(x)))
-        # x17 = self.headX17(x17)
-        L8 = torch.sigmoid(self.headL8(x))
+        x17 = self.headX17(x)
+        L8 = torch.sigmoid(self.headL8(x17))
         L8c = self.l_max
 
         # x18 = torch.flatten(self.conv18b(self.conv18a(x)))
-        # x18 = self.headX18(x18)
-        C0 = torch.sigmoid(self.headC0(x))
+        x18 = self.headX18(x)
+        C0 = torch.sigmoid(self.headC0(x18))
         C0c = self.C_max
 
         # x19 = torch.flatten(self.conv19b(self.conv19a(x)))
-        # x19 = self.headX19(x19)
-        R0 = torch.sigmoid(self.headR0(x))
+        x19 = self.headX19(x)
+        R0 = torch.sigmoid(self.headR0(x19))
         R0c = self.R_max
 
         self.const = [W0c, W1c, W2c, W3c, W4c, W5c, W6c, W7c, W8c, L0c, L1c, L2c, L3c, L4c, L5c, L6c, L7c, L8c, C0c,
@@ -594,5 +594,5 @@ class Qtrainer:
             self.loss_list.append(loss.item())
             loss.backward()
             self.optim.step()
-            #self.model.apply(update_boost_strength)
-        #self.model.apply(rezero_weights)
+            self.model.apply(update_boost_strength)
+        self.model.apply(rezero_weights)

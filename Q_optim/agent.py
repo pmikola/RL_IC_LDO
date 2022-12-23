@@ -37,7 +37,7 @@ class Agent:
         self.alpha = 0.5  # learning rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.short_memory = deque(maxlen=MAX_SHORT_MEMORY)
-        self.model = Qnet(len(self.model_input), 1).float().to(device)
+        self.model = Qnet(len(self.model_input), 13).float().to(device)
         pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print("No. of Parametres : ", pytorch_total_params)
         pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
