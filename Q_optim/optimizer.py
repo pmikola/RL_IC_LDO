@@ -7,6 +7,8 @@ from matplotlib.animation import FuncAnimation
 from env import LDO_SIM
 from agent import Agent
 
+use_cuda = True
+device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
 torch.manual_seed(2022)
 np.random.seed(2022)
 
@@ -34,7 +36,6 @@ def train():
         # MaVal, DevaVal = agent.b2val(MbVal, DevbVal)
         # var_transmutation = agent.ldo_sim.ch_value * MaVal
         # print("TRANSMUTATION VAL",var_transmutation)
-
         reward = agent.ldo_sim.set_current_var(final_move, reward)
         agent.ldo_sim.play_step(1, agent.scores, agent.mean_scores, agent.trainer.loss_list)
         # # make a judgment about those moves
@@ -48,9 +49,11 @@ def train():
 
         i_counter += 1
         if reward > record or i_counter > 20:
+        #if i_counter > 20:
             done = 1
             i_counter = 0
         print("REWARD : ", reward)
+        # reward -= 1
         total_score += reward
         agent.scores.append(reward)
         try:

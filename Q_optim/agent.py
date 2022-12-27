@@ -12,10 +12,9 @@ from Q_optim.model import Qnet, Qtrainer
 from env import LDO_SIM
 
 MAX_MEMORY = 100_000
-MAX_SHORT_MEMORY = 32
-BATCH_SIZE = 256
-BATCH_SIZE_SHORT = 16
-LR = 0.001
+MAX_SHORT_MEMORY = 16
+BATCH_SIZE = 512
+BATCH_SIZE_SHORT = 8
 # matplotlib.use('Qt5Agg')
 use_cuda = True
 device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
@@ -33,8 +32,8 @@ class Agent:
         self.V_output = None
         self.n_games = 1
         self.epsilon = 0.5  # randomness
-        self.gamma = 0.95  # discount rate
-        self.alpha = 0.5  # learning rate
+        self.gamma = 0.85  # discount rate
+        self.alpha = 0.75  # learning rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.short_memory = deque(maxlen=MAX_SHORT_MEMORY)
         self.model = Qnet(len(self.model_input), 13).float().to(device)
@@ -43,7 +42,7 @@ class Agent:
         pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print("No. of Trainable parametres : ", pytorch_total_params)
         time.sleep(0.5)
-        self.trainer = Qtrainer(self.model, lr=0.001, alpha=self.alpha, gamma=self.gamma)  # , alpha=self.alpha)
+        self.trainer = Qtrainer(self.model, lr=0.0005, alpha=self.alpha, gamma=self.gamma)  # , alpha=self.alpha)
         self.game = None
         self.agent = None
         self.scores = []
@@ -89,7 +88,6 @@ class Agent:
                     reward += 1
                 else:
                     reward -= 0
-
         return reward
 
     def get_state(self):
@@ -152,7 +150,7 @@ class Agent:
         else:
             for i in range(len(self.model.const)):
                 p = predictions[i].cpu().detach().numpy()
-                self.twopass(p, 0.5, 0., 1, 0)
+                #self.twopass(p, 0.5, 0., 1, 0) # 4bce2mse
 
                 if np.all(p == 0.):
                     preds.append(self.model.const[i])

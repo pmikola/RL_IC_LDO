@@ -13,6 +13,7 @@ from scipy.ndimage import interpolation
 from scipy.fft import fft, fftfreq, fftshift
 import pywt
 from pywt import wavedec
+import random
 matplotlib.use('Qt5Agg')
 
 
@@ -39,13 +40,20 @@ class LDO_SIM:
     def __init__(self):
         super().__init__()
         # STARTING VALUES
-        self.w_change1 = '1';self.w_change3 = '15';self.w_change4 = '15';
-        self.w_change5 = '1';self.w_change7 = '10';self.w_change8 = '10';
-        self.l_pass = '0.75';self.l_change1 = '0.05';self.l_change2 = '0.05';
-        self.l_change3 = '0.05';self.l_change4 = '0.05';self.l_change5 = '0.05';
-        self.l_change6 = '0.05';self.l_change7 = '0.05';self.l_change8 = '0.05';
-        self.w_change2 = '60';self.w_change6 = '60';self.Cp = '5';
-        self.w_pass = '35000';self.Rset='24'
+        # self.w_change1 = '1';self.w_change3 = '15';self.w_change4 = '15';
+        # self.w_change5 = '1';self.w_change7 = '10';self.w_change8 = '10';
+        # self.l_pass = '0.75';self.l_change1 = '0.05';self.l_change2 = '0.05';
+        # self.l_change3 = '0.05';self.l_change4 = '0.05';self.l_change5 = '0.05';
+        # self.l_change6 = '0.05';self.l_change7 = '0.05';self.l_change8 = '0.05';
+        # self.w_change2 = '60';self.w_change6 = '60';self.Cp = '5';
+        # self.w_pass = '35000';self.Rset='24'
+        self.w_change1 = str(random.uniform(0.1, 5.));self.w_change3 = str(random.uniform(0.05, 25.));self.w_change4 = str(random.uniform(0.05, 25.));
+        self.w_change5 = str(random.uniform(0.1, 5.));self.w_change7 = str(random.uniform(0.05, 25.));self.w_change8 = str(random.uniform(0.05, 25.));
+        self.l_pass = str(random.uniform(0.1, 5.));self.l_change1 = str(random.uniform(0.05, 5.));self.l_change2 = str(random.uniform(0.05, 5.));
+        self.l_change3 = str(random.uniform(0.05, 5.));self.l_change4 = str(random.uniform(0.05, 5.));self.l_change5 = str(random.uniform(0.05, 5.));
+        self.l_change6 = str(random.uniform(0.05, 5.));self.l_change7 = str(random.uniform(0.05, 5.));self.l_change8 = str(random.uniform(0.05, 5.));
+        self.w_change2 = str(random.uniform(25., 100.));self.w_change6 = str(random.uniform(25., 100.));self.Cp = str(random.uniform(0.05, 25.));
+        self.w_pass = str(random.uniform(25000., 55000.));self.Rset=str(random.uniform(5., 35.))
         # STARTING VALUES
         self.rewards = []
 
@@ -184,7 +192,7 @@ class LDO_SIM:
         self.cwt_list = []
         self.dwt_list = []
         # number of signal points
-        no_points = 200
+        no_points = 250
         # sample spacing
         T = 1. / 10*no_points
         # cwt no points
@@ -247,6 +255,7 @@ class LDO_SIM:
         self.sim_state = self.current_state_var
         for i in range(0,len(self.V_source_list)):
             self.sim_state = np.concatenate([self.sim_state,self.V_source_list[i]])
+            self.sim_state = np.concatenate([self.sim_state, self.I_source_list[i]])
             self.sim_state = np.concatenate([self.sim_state,self.cwt_list[i][0]])
             self.sim_state = np.concatenate([self.sim_state, self.cwt_list[i][15]])
             self.sim_state = np.concatenate([self.sim_state, self.cwt_list[i][29]])
@@ -255,6 +264,7 @@ class LDO_SIM:
             self.sim_state = np.concatenate([self.sim_state, self.dwt_list[i][2]])
             self.sim_state = np.concatenate([self.sim_state, self.V_spectrum_list[i]])
             self.sim_state = np.concatenate([self.sim_state, self.Vs_fft[i].imag])
+
 
 
         if plot_option == 1:

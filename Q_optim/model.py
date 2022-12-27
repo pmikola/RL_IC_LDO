@@ -33,13 +33,31 @@ device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "c
 class Qnet(nn.Module):
     def __init__(self, input_size, no_bits):
         super().__init__()
-        self.input_size = input_size
-        self.hidden_size = self.input_size
+
+        self.MemStruct0 = torch.ones(input_size).to(device)
+        self.input_size = input_size  # input_size
+        self.hidden_size = int(self.input_size / 4)
+        self.num_layers = 2
+        self.SPARSITY = 0.2
+        self.SPARSITY_CNN = 0.2
+        self.PERCENT_ON = 0.33
+        self.PERCENT_ON_LIN = 0.33
+        self.BOOST_STRENGTH = 2.
+        self.dropout = 0.1
+        self.bidirectional = False
+        self.duty_cycle = None
+        self.k = 100
+        self.break_ties = True
+        self.inplace = True
+        self.WSPARSITY = 0.4
+        self.relu_on = True
+        self.fac = 2
+        self.data_flow_counter = 0.
         self.l_min = 0.05
         self.l_max = 10
         self.w_min = 0.05
         self.w_max = 50
-        self.w_pass_min = 30000.
+        self.w_pass_min = 25000.
         self.w_pass_max = 65000.
         self.C_min = 1.
         self.C_max = 25.
@@ -53,36 +71,32 @@ class Qnet(nn.Module):
         self.k1 = self.k2 = 3
         self.p = 1
         self.s = 1
-        self.fac = 4
-        self.SPARSITY = 0.2
-        self.SPARSITY_CNN = 0.2
-        self.PERCENT_ON = 0.3
-        self.PERCENT_ON_LIN = 0.3
-        self.BOOST_STRENGTH = 1.4
-        self.duty_cycle = None
-        self.k = 100
-        self.break_ties = True
-        self.inplace = True
-        self.WSPARSITY = 0.4
-        self.relu_on = True
+
         self.no_bits = no_bits
         # LATENT NON-LINEAR SHARED SPACE MAPPING
-        # TODO : More degrees of freedom
-        # TODO : LATENT SPACE FOR EACH OF THE HEADS??!
-        # self.convLatentA = SparseWeights2d(
-        #     nn.Conv2d(in_channels=35, out_channels=13, kernel_size=(3, 3), stride=(1, 1), padding=1),
-        #     sparsity=self.SPARSITY_CNN)
-        # self.convLAWinn = KWinners2d(channels=13, percent_on=self.PERCENT_ON, boost_strength=self.BOOST_STRENGTH)
-        # self.convLatentB = SparseWeights2d(
-        #     nn.Conv2d(in_channels=13, out_channels=35, kernel_size=(3, 3), stride=(1, 1), padding=1),
-        #     sparsity=self.SPARSITY_CNN)
-        # self.convLBWinn = KWinners2d(channels=35, percent_on=self.PERCENT_ON, boost_strength=self.BOOST_STRENGTH)
 
-        self.linear1 = nn.Linear(self.input_size, self.hidden_size)
+        if self.bidirectional:
+            self.hidden_size /= 2
+        self.lstmLatent = nn.LSTM(self.input_size,
+                                  self.hidden_size,
+                                  self.num_layers,
+                                  dropout=self.dropout,
+                                  bidirectional=self.bidirectional)
+
+        self.convLatentA = SparseWeights2d(
+            nn.Conv2d(in_channels=10, out_channels=14, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            sparsity=self.SPARSITY_CNN)
+        self.convLAWinn = KWinners2d(channels=14, percent_on=self.PERCENT_ON, relu=self.relu_on,
+                                     boost_strength=self.BOOST_STRENGTH)
+        self.convLatentB = SparseWeights2d(
+            nn.Conv2d(in_channels=14, out_channels=12, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            sparsity=self.SPARSITY_CNN)
+        self.convLBWinn = KWinners2d(channels=12, percent_on=self.PERCENT_ON, relu=self.relu_on,
+                                     boost_strength=self.BOOST_STRENGTH)
+
+        self.linearLatent = nn.Linear(1512, self.hidden_size)
         # self.linear2 = nn.Linear(self.hidden_size, self.hidden_size)
         # LATENT NON-LINEAR SHARED SPACE MAPPING
-
-        # TODO : RL MultiHEADregressor vs. MultiLabelClassifier vs. MultiheadBinaryClassifier vs. Mixed
 
         ############### Multiregressor ################
 
@@ -356,6 +370,27 @@ class Qnet(nn.Module):
             KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
                      boost_strength=self.BOOST_STRENGTH))
 
+        # self.headX0 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX1 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX2 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX3 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX4 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX5 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX6 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX7 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX8 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX9 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX10 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX11 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX12 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX13 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX14 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX15 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX16 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX17 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX18 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        # self.headX19 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+
         # REGRESSOR FOR W Values x 9 W vals
         self.headW0 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
         self.headW1 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
@@ -383,10 +418,12 @@ class Qnet(nn.Module):
         ############### Multiregressor ################
 
         self.apply(self.__init__weights)
+        self.mem_init()
+
 
     def __init__weights(self, module):
         if isinstance(module, nn.Linear):
-            module.weight.data.normal_(mean=0.0, std=1 / np.sqrt(self.input_size))
+            module.weight.data.normal_(mean=0.0, std=np.sqrt(6) / np.sqrt(self.input_size))
             if module.bias is not None:
                 module.bias.data.zero_()
 
@@ -401,113 +438,131 @@ class Qnet(nn.Module):
             range = torch.tensor(0.05)
         return [range]
 
+    def mem_init(self):
+        self.h_0 = Variable(torch.zeros(self.num_layers, 1, int(self.input_size/4)).to(device))
+        self.c_0 = Variable(torch.zeros(self.num_layers, 1, int(self.input_size/4)).to(device))
+
     def forward(self, x):
         # print(x.size())
 
-        x = x.reshape(13, 35, 2, 2)##
-        # x = self.convLAWinn(self.convLatentA(x))
-        # x = self.convLBWinn(self.convLatentB(x))
-        # x = F.layer_norm(x,[35, 2, 2])
+        self.data_flow_counter += 1.
+        x = x.reshape([1,1,x.size(0)])
+
+        # print(h_0.size())
+        # print(c_0.size())
+        # print(x.size())
+        output, (self.h_0, self.c_0) = self.lstmLatent(x, (self.h_0, self.c_0))
+        # torch.set_printoptions(profile="full")
+        # self.MemStruct0 = torch.add(x, self.MemStruct0) / torch.max(self.MemStruct0)
+        x = self.h_0.reshape(14, 10, 3, 3)
+        x = self.convLAWinn(self.convLatentA(x))
+        # x = F.layer_norm(x,[14, 3, 3])
+        x = self.convLBWinn(self.convLatentB(x))
+        # print(self.MemStruct1)
+        # x = torch.flatten(torch.cat([x, self.MemStruct0]))
+
+        #print(x.size())
         x = torch.flatten(x)
-        x = self.linear1(x)
+
+        x = self.linearLatent(x)
         # x0 = torch.flatten(self.conv0b(self.conv0a(x)))
         x0 = self.headX0(x)
-        W0 = torch.sigmoid(self.headW0(x0))
+        W0 = self.headW0(x0)
         W0c = self.w_max
 
         # x1 = torch.flatten(self.conv1b(self.conv1a(x)))
         x1 = self.headX1(x)
-        W1 = torch.sigmoid(self.headW1(x1))
+        W1 = self.headW1(x1)
         W1c = self.w_hb
 
         # x2 = torch.flatten(self.conv2b(self.conv2a(x)))
         x2 = self.headX2(x)
-        W2 = torch.sigmoid(self.headW2(x2))
+        W2 = self.headW2(x2)
         W2c = self.w_max
 
         # x3 = torch.flatten(self.conv3b(self.conv3a(x)))
         x3 = self.headX3(x)
-        W3 = torch.sigmoid(self.headW3(x3))
+        W3 = self.headW3(x3)
         W3c = self.w_max
 
         # x4 = torch.flatten(self.conv4b(self.conv4a(x)))
         x4 = self.headX4(x)
-        W4 = torch.sigmoid(self.headW4(x4))
+        W4 = self.headW4(x4)
         W4c = self.w_max
 
         # x5 = torch.flatten(self.conv5b(self.conv5a(x)))
         x5 = self.headX5(x)
-        W5 = torch.sigmoid(self.headW5(x5))
+        W5 = self.headW5(x5)
         W5c = self.w_hb
 
         # x6 = torch.flatten(self.conv6b(self.conv6a(x)))
         x6 = self.headX6(x)
-        W6 = torch.sigmoid(self.headW6(x6))
+        W6 = self.headW6(x6)
         W6c = self.w_max
 
         # x7 = torch.flatten(self.conv7b(self.conv7a(x)))
         x7 = self.headX7(x)
-        W7 = torch.sigmoid(self.headW7(x7))
+        W7 = self.headW7(x7)
         W7c = self.w_max
 
         # x8 = torch.flatten(self.conv8b(self.conv8a(x)))
         x8 = self.headX8(x)
-        W8 = torch.sigmoid(self.headW8(x8))
+        W8 = self.headW8(x8)
         W8c = self.w_pass_max
 
         # x9 = torch.flatten(self.conv9b(self.conv9a(x)))
         x9 = self.headX9(x)
-        L0 = torch.sigmoid(self.headL0(x9))
+        L0 = self.headL0(x9)
         L0c = self.l_max
 
         # x10 = torch.flatten(self.conv10b(self.conv10a(x)))
         x10 = self.headX10(x)
-        L1 = torch.sigmoid(self.headL1(x10))
+        L1 = self.headL1(x10)
         L1c = self.l_max
 
         # x11 = torch.flatten(self.conv11b(self.conv11a(x)))
         x11 = self.headX11(x)
-        L2 = torch.sigmoid(self.headL2(x11))
+        L2 = self.headL2(x11)
         L2c = self.l_max
 
         # x12 = torch.flatten(self.conv12b(self.conv12a(x)))
         x12 = self.headX12(x)
-        L3 = torch.sigmoid(self.headL3(x12))
+        L3 = self.headL3(x12)
         L3c = self.l_max
 
         # x13 = torch.flatten(self.conv13b(self.conv13a(x)))
         x13 = self.headX13(x)
-        L4 = torch.sigmoid(self.headL4(x13))
+        L4 = self.headL4(x13)
         L4c = self.l_max
 
         # x14 = torch.flatten(self.conv14b(self.conv14a(x)))
         x14 = self.headX14(x)
-        L5 = torch.sigmoid(self.headL5(x14))
+        L5 = self.headL5(x14)
         L5c = self.l_max
 
         # x15 = torch.flatten(self.conv15b(self.conv15a(x)))
         x15 = self.headX15(x)
-        L6 = torch.sigmoid(self.headL6(x15))
+        L6 = self.headL6(x15)
         L6c = self.l_max
 
         # x16 = torch.flatten(self.conv16b(self.conv16a(x)))
         x16 = self.headX16(x)
-        L7 = torch.sigmoid(self.headL7(x16))
+        L7 = self.headL7(x16)
         L7c = self.l_max
 
         # x17 = torch.flatten(self.conv17b(self.conv17a(x)))
         x17 = self.headX17(x)
-        L8 = torch.sigmoid(self.headL8(x17))
+        L8 = self.headL8(x17)
         L8c = self.l_max
 
         # x18 = torch.flatten(self.conv18b(self.conv18a(x)))
         x18 = self.headX18(x)
-        C0 = torch.sigmoid(self.headC0(x18))
+        C0 = self.headC0(x18)
         C0c = self.C_max
 
         # x19 = torch.flatten(self.conv19b(self.conv19a(x)))
         x19 = self.headX19(x)
-        R0 = torch.sigmoid(self.headR0(x19))
+        R0 = self.headR0(x19)
         R0c = self.R_max
 
         self.const = [W0c, W1c, W2c, W3c, W4c, W5c, W6c, W7c, W8c, L0c, L1c, L2c, L3c, L4c, L5c, L6c, L7c, L8c, C0c,
@@ -531,13 +586,18 @@ class Qtrainer:
         self.alpha = alpha
         self.model = model
         self.loss_list = []
+        self.no_heads = 20
+        self.no_enhancments = int(
+            self.model.no_bits * 0.5)  # smaller => slower training but more robust (just like in k-winners)
+        self.treshold_bce = nn.Hardtanh(0., 1.)
         # self.swa_model = AveragedModel(model)
-        # self.optim = torch.optim.SGD(model.parameters(), lr=0.001)
-        self.optim = torch.optim.Adam(model.parameters(), lr=self.lr, amsgrad=True)
+        # self.optim = torch.optim.SGD(model.parameters(), lr=self.lr)
+        self.optim = torch.optim.Adam(model.parameters(), lr=self.lr, weight_decay=2e-4, amsgrad=True)
+        # self.optim = torch.optim.RMSprop(model.parameters(),lr=self.lr,weight_decay=2e-3)
         # self.scheduler = CosineAnnealingLR(self.optim, T_max=100)
-        #self.criterion = nn.MSELoss(reduce='mean')  # reduce='sum')
-        # self.criterion = nn.L1Loss(reduce='mean')
-        self.criterion = nn.BCELoss(reduce='mean')
+        self.criterion = nn.MSELoss(reduce='mean')  # reduce='sum')
+        # pos_weight = torch.full([self.model.no_bits], 20.).to(device)
+        # self.criterion = nn.BCEWithLogitsLoss(reduce='mean')#, pos_weight=pos_weight)
 
     def train_step(self, state, action, reward, next_state):
         global loss, loss_t
@@ -555,44 +615,52 @@ class Qtrainer:
         self.optim.zero_grad()
         torch.set_grad_enabled(True)
         self.model.train()
+
+        target = torch.zeros((self.no_heads, self.model.no_bits)).to(device)
+
         ################# Standard Q Learning Equation #####################
-        #
         # Qnew (state(t),action(t)) <-
         # <- Q(state(t),action(t)) + alpha * (REWARD(t) + gamma *
         #  * maxQ(state(t+1),actions) - Q(state(t),action(t))
-
         ################# Standard Q Learrning Equation #####################
-        self.no_heads = 20
-        treshold_bce = nn.Hardtanh(0.,1.)
-        target = torch.zeros((self.no_heads, self.model.no_bits)).to(device)
+
         for idx in range(0, int(np.array(state.cpu().detach().numpy()).shape[0])):
             # Q_s = F.normalize(Q_s, dim=0)
             prediction = self.model(state[idx])
             next_prediction = self.model(next_state[idx])
-            for i in range(0,self.no_heads):
+            for i in range(0, self.no_heads):
                 target[i] = prediction[i].clone()
             for jdx in range(0, 20):
-                next_pred_max, next_pred_argmax = torch.topk(next_prediction[jdx], int(self.model.no_bits / 2))
+                next_pred_max, next_pred_argmax = torch.topk(next_prediction[jdx], self.no_enhancments)
                 Q_new = self.alpha * (reward[idx] + self.gamma * next_pred_max)
-                action_max, action_argmax = torch.topk(action[idx][jdx], int(self.model.no_bits / 2))
+                action_max, action_argmax = torch.topk(action[idx][jdx], self.no_enhancments)
 
                 target[jdx][action_argmax] = Q_new
-                # print(target[idx][action_argmax])
-                # time.sleep(5)
+
                 # print(" |||| state |XX|", state[idx], " |XX| target |XX|", target[idx], " |XX| preds |XX|",
                 #       prediction[idx], " |XX| Q_new |XX|", Q_new, " |XX| R |XX|", reward[idx], " |XX| ACTION |XX|",
                 #       action[0][idx], " |||| ")
 
-                target[jdx] = treshold_bce(target[jdx])
+                # target[jdx] = self.treshold_bce(target[jdx])
                 if jdx == 0:
                     loss = self.criterion(target[jdx], prediction[jdx])
                     loss = Variable(loss, requires_grad=True)
                 else:
                     loss_t = self.criterion(target[jdx], prediction[jdx])
                     loss = loss + Variable(loss_t, requires_grad=True)
-
-            self.loss_list.append(loss.item())
-            loss.backward()
-            self.optim.step()
-            self.model.apply(update_boost_strength)
-        self.model.apply(rezero_weights)
+            # print(target)
+            if reward[idx] == torch.max(reward):
+                # print(reward[idx])
+                ##for kdx in range(0,reward.size(0)):
+                # loss = loss / loss
+                self.loss_list.append(loss.item())
+                loss.backward()
+                self.optim.step()
+                self.model.apply(update_boost_strength)
+                self.model.apply(rezero_weights)
+            else:
+                self.loss_list.append(loss.item())
+                loss.backward()
+                self.optim.step()
+                self.model.apply(update_boost_strength)
+                self.model.apply(rezero_weights)
