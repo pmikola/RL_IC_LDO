@@ -36,22 +36,23 @@ class Qnet(nn.Module):
 
         self.MemStruct0 = torch.ones(input_size).to(device)
         self.input_size = input_size  # input_size
-        self.hidden_size = int(self.input_size / 4)
-        self.num_layers = 2
-        self.SPARSITY = 0.2
-        self.SPARSITY_CNN = 0.2
+        self.hidden_size = int(self.input_size / 2)
+        self.num_layers = 2 # TODO 3?
+        self.fac = 3
+        self.SPARSITY = 0.66
+        self.SPARSITY_CNN = self.SPARSITY
         self.PERCENT_ON = 0.33
-        self.PERCENT_ON_LIN = 0.33
-        self.BOOST_STRENGTH = 2.
+        self.PERCENT_ON_LIN = self.PERCENT_ON
+        self.BOOST_STRENGTH = 1.6
         self.dropout = 0.1
-        self.bidirectional = False
+        self.bidirectional = True
         self.duty_cycle = None
         self.k = 100
         self.break_ties = True
         self.inplace = True
         self.WSPARSITY = 0.4
-        self.relu_on = True
-        self.fac = 2
+        self.relu_on = False
+
         self.data_flow_counter = 0.
         self.l_min = 0.05
         self.l_max = 10
@@ -71,30 +72,33 @@ class Qnet(nn.Module):
         self.k1 = self.k2 = 3
         self.p = 1
         self.s = 1
+        self.done = 0
 
         self.no_bits = no_bits
         # LATENT NON-LINEAR SHARED SPACE MAPPING
 
         if self.bidirectional:
-            self.hidden_size /= 2
+            self.bi = 2
+        else:
+            self.bi = 1
         self.lstmLatent = nn.LSTM(self.input_size,
                                   self.hidden_size,
                                   self.num_layers,
                                   dropout=self.dropout,
                                   bidirectional=self.bidirectional)
 
-        self.convLatentA = SparseWeights2d(
-            nn.Conv2d(in_channels=10, out_channels=14, kernel_size=(3, 3), stride=(1, 1), padding=1),
-            sparsity=self.SPARSITY_CNN)
-        self.convLAWinn = KWinners2d(channels=14, percent_on=self.PERCENT_ON, relu=self.relu_on,
-                                     boost_strength=self.BOOST_STRENGTH)
-        self.convLatentB = SparseWeights2d(
-            nn.Conv2d(in_channels=14, out_channels=12, kernel_size=(3, 3), stride=(1, 1), padding=1),
-            sparsity=self.SPARSITY_CNN)
-        self.convLBWinn = KWinners2d(channels=12, percent_on=self.PERCENT_ON, relu=self.relu_on,
-                                     boost_strength=self.BOOST_STRENGTH)
+        # self.convLatentA = SparseWeights2d(
+        #     nn.Conv2d(in_channels=10, out_channels=14, kernel_size=(3, 3), stride=(1, 1), padding=1),
+        #     sparsity=self.SPARSITY_CNN)
+        # self.convLAWinn = KWinners2d(channels=14, percent_on=self.PERCENT_ON, relu=self.relu_on,
+        #                              boost_strength=self.BOOST_STRENGTH)
+        # self.convLatentB = SparseWeights2d(
+        #     nn.Conv2d(in_channels=14, out_channels=12, kernel_size=(3, 3), stride=(1, 1), padding=1),
+        #     sparsity=self.SPARSITY_CNN)
+        # self.convLBWinn = KWinners2d(channels=12, percent_on=self.PERCENT_ON, relu=self.relu_on,
+        #                              boost_strength=self.BOOST_STRENGTH)
 
-        self.linearLatent = nn.Linear(1512, self.hidden_size)
+        self.linearLatent = nn.Linear(self.hidden_size * self.num_layers * self.bi, self.hidden_size)
         # self.linear2 = nn.Linear(self.hidden_size, self.hidden_size)
         # LATENT NON-LINEAR SHARED SPACE MAPPING
 
@@ -370,56 +374,214 @@ class Qnet(nn.Module):
             KWinners(n=int(self.hidden_size / self.fac), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
                      boost_strength=self.BOOST_STRENGTH))
 
-        # self.headX0 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX1 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX2 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX3 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX4 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX5 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX6 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX7 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX8 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX9 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX10 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX11 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX12 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX13 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX14 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX15 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX16 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX17 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX18 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
-        # self.headX19 = nn.Linear(self.hidden_size, int(self.hidden_size / self.fac))
+        self.lstmW0 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmW1 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmW2 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmW3 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmW4 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmW5 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmW6 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmW7 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmW8 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmL0 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmL1 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmL2 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmL3 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmL4 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+        self.lstmL5 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmL6 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmL7 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmL8 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmC0 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
+        self.lstmR0 = nn.LSTM(int(self.hidden_size / self.fac),
+                              int(self.hidden_size / self.fac),
+                              self.num_layers,
+                              dropout=self.dropout,
+                              bidirectional=self.bidirectional)
+
 
         # REGRESSOR FOR W Values x 9 W vals
-        self.headW0 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headW1 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headW2 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headW3 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headW4 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headW5 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headW6 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headW7 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headW8 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
+        self.headW0 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headW1 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headW2 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headW3 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headW4 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headW5 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headW6 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headW7 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headW8 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
         # REGRESSOR FOR L Values  x 9 W vals
-        self.headL0 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headL1 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headL2 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headL3 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headL4 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headL5 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headL6 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headL7 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
-        self.headL8 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
+        self.headL0 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headL1 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headL2 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headL3 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headL4 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headL5 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headL6 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headL7 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
+        self.headL8 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
         # REGRESSOR FOR C Value
-        self.headC0 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
+        self.headC0 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
         # REGRESSOR FOR R Value
-        self.headR0 = nn.Linear(int(self.hidden_size / self.fac), self.no_bits)
+        self.headR0 = nn.Sequential(
+            SparseWeights(nn.Linear(int(self.hidden_size / self.fac)* self.num_layers * self.bi, self.no_bits), sparsity=self.SPARSITY),
+            KWinners(n=int(self.no_bits), percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                     boost_strength=self.BOOST_STRENGTH))
         ############### Multiregressor ################
 
         self.apply(self.__init__weights)
         self.mem_init()
-
 
     def __init__weights(self, module):
         if isinstance(module, nn.Linear):
@@ -439,129 +601,232 @@ class Qnet(nn.Module):
         return [range]
 
     def mem_init(self):
-        self.h_0 = Variable(torch.zeros(self.num_layers, 1, int(self.input_size/4)).to(device))
-        self.c_0 = Variable(torch.zeros(self.num_layers, 1, int(self.input_size/4)).to(device))
+        self.h_0 = Variable(torch.zeros(self.num_layers * self.bi, 1, self.hidden_size).to(device))
+        self.c_0 = Variable(torch.zeros(self.num_layers * self.bi, 1, self.hidden_size).to(device))
+        self.h_W0 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_W0 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_W1 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_W1 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_W2 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_W2 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_W3 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_W3 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_W4 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_W4 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_W5 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_W5 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_W6 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_W6 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_W7 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_W7 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_W8 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_W8 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_L0 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_L0 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_L1 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_L1 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_L2 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_L2 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_L3 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_L3 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_L4 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_L4 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_L5 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_L5 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_L6 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_L6 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_L7 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_L7 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_L8 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_L8 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_C0 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_C0 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.h_R0 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
+        self.c_R0 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size/self.fac)).to(device))
 
     def forward(self, x):
         # print(x.size())
 
         self.data_flow_counter += 1.
-        x = x.reshape([1,1,x.size(0)])
-
+        x = x.reshape([1, 1, x.size(0)])
+        if self.done == 1:
+            self.mem_init()
+            self.done = 0
+        # self.mem_init()
         # print(h_0.size())
         # print(c_0.size())
         # print(x.size())
-        output, (self.h_0, self.c_0) = self.lstmLatent(x, (self.h_0, self.c_0))
+        _, (self.h_0, self.c_0) = self.lstmLatent(x, (self.h_0, self.c_0))
         # torch.set_printoptions(profile="full")
         # self.MemStruct0 = torch.add(x, self.MemStruct0) / torch.max(self.MemStruct0)
-        x = self.h_0.reshape(14, 10, 3, 3)
-        x = self.convLAWinn(self.convLatentA(x))
-        # x = F.layer_norm(x,[14, 3, 3])
-        x = self.convLBWinn(self.convLatentB(x))
+        # x = self.h_0.reshape(14, 10, 3, 3)
+        # x = self.convLAWinn(self.convLatentA(x))
+        # # x = F.layer_norm(x,[14, 3, 3])
+        # x = self.convLBWinn(self.convLatentB(x))
         # print(self.MemStruct1)
         # x = torch.flatten(torch.cat([x, self.MemStruct0]))
 
-        #print(x.size())
-        x = torch.flatten(x)
+        # print(x.size())
+        x = torch.flatten(self.h_0)
 
         x = self.linearLatent(x)
         # x0 = torch.flatten(self.conv0b(self.conv0a(x)))
         x0 = self.headX0(x)
+        x0 = x0.reshape([1, 1, x0.size(0)])
+        _, (self.h_W0, self.c_W0) = self.lstmW0(x0, (self.h_W0, self.c_W0))
+        x0 = torch.flatten(self.h_W0)
         W0 = self.headW0(x0)
         W0c = self.w_max
 
         # x1 = torch.flatten(self.conv1b(self.conv1a(x)))
         x1 = self.headX1(x)
+        x1 = x1.reshape([1, 1, x1.size(0)])
+        _, (self.h_W1, self.c_W1) = self.lstmW1(x1, (self.h_W1, self.c_W1))
+        x1 = torch.flatten(self.h_W1)
         W1 = self.headW1(x1)
         W1c = self.w_hb
 
         # x2 = torch.flatten(self.conv2b(self.conv2a(x)))
         x2 = self.headX2(x)
+        x2 = x2.reshape([1, 1, x2.size(0)])
+        _, (self.h_W2, self.c_W2) = self.lstmW2(x2, (self.h_W2, self.c_W2))
+        x2 = torch.flatten(self.h_W2)
         W2 = self.headW2(x2)
         W2c = self.w_max
 
         # x3 = torch.flatten(self.conv3b(self.conv3a(x)))
         x3 = self.headX3(x)
+        x3 = x3.reshape([1, 1, x3.size(0)])
+        _, (self.h_W3, self.c_W3) = self.lstmW3(x3, (self.h_W3, self.c_W3))
+        x3 = torch.flatten(self.h_W3)
         W3 = self.headW3(x3)
         W3c = self.w_max
 
         # x4 = torch.flatten(self.conv4b(self.conv4a(x)))
         x4 = self.headX4(x)
+        x4 = x4.reshape([1, 1, x4.size(0)])
+        _, (self.h_W4, self.c_W4) = self.lstmW4(x4, (self.h_W4, self.c_W4))
+        x4 = torch.flatten(self.h_W4)
         W4 = self.headW4(x4)
         W4c = self.w_max
 
         # x5 = torch.flatten(self.conv5b(self.conv5a(x)))
         x5 = self.headX5(x)
+        x5 = x5.reshape([1, 1, x5.size(0)])
+        _, (self.h_W5, self.c_W5) = self.lstmW5(x5, (self.h_W5, self.c_W5))
+        x5 = torch.flatten(self.h_W5)
         W5 = self.headW5(x5)
         W5c = self.w_hb
 
         # x6 = torch.flatten(self.conv6b(self.conv6a(x)))
         x6 = self.headX6(x)
+        x6 = x6.reshape([1, 1, x6.size(0)])
+        _, (self.h_W6, self.c_W6) = self.lstmW6(x6, (self.h_W6, self.c_W6))
+        x6 = torch.flatten(self.h_W6)
         W6 = self.headW6(x6)
         W6c = self.w_max
 
         # x7 = torch.flatten(self.conv7b(self.conv7a(x)))
         x7 = self.headX7(x)
+        x7 = x7.reshape([1, 1, x7.size(0)])
+        _, (self.h_W7, self.c_W7) = self.lstmW7(x7, (self.h_W7, self.c_W7))
+        x7 = torch.flatten(self.h_W7)
         W7 = self.headW7(x7)
         W7c = self.w_max
 
         # x8 = torch.flatten(self.conv8b(self.conv8a(x)))
         x8 = self.headX8(x)
+        x8 = x8.reshape([1, 1, x8.size(0)])
+        _, (self.h_W8, self.c_W8) = self.lstmW8(x8, (self.h_W8, self.c_W8))
+        x8 = torch.flatten(self.h_W8)
         W8 = self.headW8(x8)
         W8c = self.w_pass_max
 
         # x9 = torch.flatten(self.conv9b(self.conv9a(x)))
         x9 = self.headX9(x)
+        x9 = x9.reshape([1, 1, x9.size(0)])
+        _, (self.h_L0, self.c_L0) = self.lstmL0(x9, (self.h_L0, self.c_L0))
+        x9 = torch.flatten(self.h_L0)
         L0 = self.headL0(x9)
         L0c = self.l_max
 
         # x10 = torch.flatten(self.conv10b(self.conv10a(x)))
         x10 = self.headX10(x)
+        x10 = x10.reshape([1, 1, x10.size(0)])
+        _, (self.h_L1, self.c_L1) = self.lstmL1(x10, (self.h_L1, self.c_L1))
+        x10 = torch.flatten(self.h_L1)
         L1 = self.headL1(x10)
         L1c = self.l_max
 
         # x11 = torch.flatten(self.conv11b(self.conv11a(x)))
         x11 = self.headX11(x)
+        x11 = x11.reshape([1, 1, x11.size(0)])
+        _, (self.h_L2, self.c_L2) = self.lstmL2(x11, (self.h_L2, self.c_L2))
+        x11 = torch.flatten(self.h_L2)
         L2 = self.headL2(x11)
         L2c = self.l_max
 
         # x12 = torch.flatten(self.conv12b(self.conv12a(x)))
         x12 = self.headX12(x)
+        x12 = x12.reshape([1, 1, x12.size(0)])
+        _, (self.h_L3, self.c_L3) = self.lstmL3(x12, (self.h_L3, self.c_L3))
+        x12 = torch.flatten(self.h_L3)
         L3 = self.headL3(x12)
         L3c = self.l_max
 
         # x13 = torch.flatten(self.conv13b(self.conv13a(x)))
         x13 = self.headX13(x)
+        x13 = x13.reshape([1, 1, x13.size(0)])
+        _, (self.h_L4, self.c_L4) = self.lstmL4(x13, (self.h_L4, self.c_L4))
+        x13 = torch.flatten(self.h_L4)
         L4 = self.headL4(x13)
         L4c = self.l_max
 
         # x14 = torch.flatten(self.conv14b(self.conv14a(x)))
         x14 = self.headX14(x)
+        x14 = x14.reshape([1, 1, x14.size(0)])
+        _, (self.h_L5, self.c_L5) = self.lstmL5(x14, (self.h_L5, self.c_L5))
+        x14 = torch.flatten(self.h_L5)
         L5 = self.headL5(x14)
         L5c = self.l_max
 
         # x15 = torch.flatten(self.conv15b(self.conv15a(x)))
         x15 = self.headX15(x)
+        x15 = x15.reshape([1, 1, x15.size(0)])
+        _, (self.h_L6, self.c_L6) = self.lstmL6(x15, (self.h_L6, self.c_L6))
+        x15 = torch.flatten(self.h_L6)
         L6 = self.headL6(x15)
         L6c = self.l_max
 
         # x16 = torch.flatten(self.conv16b(self.conv16a(x)))
         x16 = self.headX16(x)
+        x16 = x16.reshape([1, 1, x16.size(0)])
+        _, (self.h_L7, self.c_L7) = self.lstmL7(x16, (self.h_L7, self.c_L7))
+        x16 = torch.flatten(self.h_L7)
         L7 = self.headL7(x16)
         L7c = self.l_max
 
         # x17 = torch.flatten(self.conv17b(self.conv17a(x)))
         x17 = self.headX17(x)
+        x17 = x17.reshape([1, 1, x17.size(0)])
+        _, (self.h_L8, self.c_L8) = self.lstmL8(x17, (self.h_L8, self.c_L8))
+        x17 = torch.flatten(self.h_L8)
         L8 = self.headL8(x17)
         L8c = self.l_max
 
         # x18 = torch.flatten(self.conv18b(self.conv18a(x)))
         x18 = self.headX18(x)
+        x18 = x18.reshape([1, 1, x18.size(0)])
+        _, (self.h_C0, self.c_C0) = self.lstmC0(x18, (self.h_C0, self.c_C0))
+        x18 = torch.flatten(self.h_C0)
         C0 = self.headC0(x18)
         C0c = self.C_max
 
         # x19 = torch.flatten(self.conv19b(self.conv19a(x)))
         x19 = self.headX19(x)
+        x19 = x19.reshape([1, 1, x19.size(0)])
+        _, (self.h_R0, self.c_R0) = self.lstmR0(x19, (self.h_R0, self.c_R0))
+        x19 = torch.flatten(self.h_R0)
         R0 = self.headR0(x19)
         R0c = self.R_max
 
@@ -587,8 +852,7 @@ class Qtrainer:
         self.model = model
         self.loss_list = []
         self.no_heads = 20
-        self.no_enhancments = int(
-            self.model.no_bits * 0.5)  # smaller => slower training but more robust (just like in k-winners)
+        self.no_enhancments = int(self.model.no_bits * model.PERCENT_ON)  # smaller => slower training but more robust (just like in k-winners)
         self.treshold_bce = nn.Hardtanh(0., 1.)
         # self.swa_model = AveragedModel(model)
         # self.optim = torch.optim.SGD(model.parameters(), lr=self.lr)
@@ -597,7 +861,7 @@ class Qtrainer:
         # self.scheduler = CosineAnnealingLR(self.optim, T_max=100)
         self.criterion = nn.MSELoss(reduce='mean')  # reduce='sum')
         # pos_weight = torch.full([self.model.no_bits], 20.).to(device)
-        # self.criterion = nn.BCEWithLogitsLoss(reduce='mean')#, pos_weight=pos_weight)
+        #self.criterion = nn.BCEWithLogitsLoss(reduce='mean')  # , pos_weight=pos_weight)
 
     def train_step(self, state, action, reward, next_state):
         global loss, loss_t
