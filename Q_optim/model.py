@@ -30,46 +30,45 @@ use_cuda = True
 device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
 
 
-
 # Factorised NoisyLinear layer with bias
 class NoisyLinear(nn.Module):
-  def __init__(self, in_features, out_features, std_init=0.5):
-    super(NoisyLinear, self).__init__()
-    self.in_features = in_features
-    self.out_features = out_features
-    self.std_init = std_init
-    self.weight_mu = nn.Parameter(torch.empty(out_features, in_features))
-    self.weight_sigma = nn.Parameter(torch.empty(out_features, in_features))
-    self.register_buffer('weight_epsilon', torch.empty(out_features, in_features))
-    self.bias_mu = nn.Parameter(torch.empty(out_features))
-    self.bias_sigma = nn.Parameter(torch.empty(out_features))
-    self.register_buffer('bias_epsilon', torch.empty(out_features))
-    self.reset_parameters()
-    self.reset_noise()
+    def __init__(self, in_features, out_features, std_init=0.5):
+        super(NoisyLinear, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.std_init = std_init
+        self.weight_mu = nn.Parameter(torch.empty(out_features, in_features))
+        self.weight_sigma = nn.Parameter(torch.empty(out_features, in_features))
+        self.register_buffer('weight_epsilon', torch.empty(out_features, in_features))
+        self.bias_mu = nn.Parameter(torch.empty(out_features))
+        self.bias_sigma = nn.Parameter(torch.empty(out_features))
+        self.register_buffer('bias_epsilon', torch.empty(out_features))
+        self.reset_parameters()
+        self.reset_noise()
 
-  def reset_parameters(self):
-    mu_range = 1 / math.sqrt(self.in_features)
-    self.weight_mu.data.uniform_(-mu_range, mu_range)
-    self.weight_sigma.data.fill_(self.std_init / math.sqrt(self.in_features))
-    self.bias_mu.data.uniform_(-mu_range, mu_range)
-    self.bias_sigma.data.fill_(self.std_init / math.sqrt(self.out_features))
+    def reset_parameters(self):
+        mu_range = 1 / math.sqrt(self.in_features)
+        self.weight_mu.data.uniform_(-mu_range, mu_range)
+        self.weight_sigma.data.fill_(self.std_init / math.sqrt(self.in_features))
+        self.bias_mu.data.uniform_(-mu_range, mu_range)
+        self.bias_sigma.data.fill_(self.std_init / math.sqrt(self.out_features))
 
-  def _scale_noise(self, size):
-    x = torch.randn(size, device=self.weight_mu.device)
-    return x.sign().mul_(x.abs().sqrt_())
+    def _scale_noise(self, size):
+        x = torch.randn(size, device=self.weight_mu.device)
+        return x.sign().mul_(x.abs().sqrt_())
 
-  def reset_noise(self):
-    epsilon_in = self._scale_noise(self.in_features)
-    epsilon_out = self._scale_noise(self.out_features)
-    self.weight_epsilon.copy_(epsilon_out.ger(epsilon_in))
-    self.bias_epsilon.copy_(epsilon_out)
+    def reset_noise(self):
+        epsilon_in = self._scale_noise(self.in_features)
+        epsilon_out = self._scale_noise(self.out_features)
+        self.weight_epsilon.copy_(epsilon_out.ger(epsilon_in))
+        self.bias_epsilon.copy_(epsilon_out)
 
-  def forward(self, input):
-    if self.training:
-      return F.linear(input, self.weight_mu + self.weight_sigma * self.weight_epsilon, self.bias_mu + self.bias_sigma * self.bias_epsilon)
-    else:
-      return F.linear(input, self.weight_mu, self.bias_mu)
-
+    def forward(self, input):
+        if self.training:
+            return F.linear(input, self.weight_mu + self.weight_sigma * self.weight_epsilon,
+                            self.bias_mu + self.bias_sigma * self.bias_epsilon)
+        else:
+            return F.linear(input, self.weight_mu, self.bias_mu)
 
 
 class Qnet(nn.Module):
@@ -149,6 +148,9 @@ class Qnet(nn.Module):
         #                              boost_strength=self.BOOST_STRENGTH)
 
         self.linearLatent = nn.Linear(self.hidden_size * self.num_layers * self.bi, self.hidden_size)
+
+        self.linearLatent_Noisy = NoisyLinear(self.hidden_size * self.num_layers * self.bi, self.hidden_size)
+
         # self.linear2 = nn.Linear(self.hidden_size, self.hidden_size)
         # LATENT NON-LINEAR SHARED SPACE MAPPING
 
@@ -718,7 +720,6 @@ class Qnet(nn.Module):
 
         # self.data_flow_counter += 1.
 
-
         x = x.reshape([1, 1, x.size(0)])
         if self.done == 1:
             self.mem_init()
@@ -729,8 +730,7 @@ class Qnet(nn.Module):
         # print(x.size())
         _, (self.h_0, self.c_0) = self.lstmLatent(x, (self.h_0, self.c_0))
         x = torch.flatten(self.h_0)
-        #print(self.memories.size(), self.mask.size())
-
+        # print(self.memories.size(), self.mask.size())
 
         # torch.set_printoptions(profile="full")
         # self.MemStruct0 = torch.add(x, self.MemStruct0) / torch.max(self.MemStruct0)
@@ -742,8 +742,9 @@ class Qnet(nn.Module):
         # x = torch.flatten(torch.cat([x, self.MemStruct0]))
 
         # print(x.size())
-
-        x = self.linearLatent(x)
+        x_det = self.linearLatent(x)
+        x_noisy = self.linearLatent_Noisy(x)
+        x = F.relu(torch.flatten(x_det) + torch.flatten(x_noisy) - x_noisy.mean())
         # x0 = torch.flatten(self.conv0b(self.conv0a(x)))
         x0 = self.headX0(x)
         x0 = x0.reshape([1, 1, x0.size(0)])
@@ -934,7 +935,8 @@ class Qtrainer:
         self.optim = torch.optim.Adam(model.parameters(), lr=self.lr, weight_decay=2e-4, amsgrad=True)
         # self.optim = torch.optim.RMSprop(model.parameters(),lr=self.lr,weight_decay=2e-3)
         # self.scheduler = CosineAnnealingLR(self.optim, T_max=100)
-        self.criterion = nn.MSELoss(reduce='mean')  # reduce='sum')
+        # self.criterion = nn.MSELoss(reduce='mean')  # reduce='sum')
+        self.criterion = nn.L1Loss(reduce='mean')
         # pos_weight = torch.full([self.model.no_bits], 20.).to(device)
         # self.criterion = nn.BCEWithLogitsLoss(reduce='mean')  # , pos_weight=pos_weight)
 

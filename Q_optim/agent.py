@@ -9,10 +9,11 @@ from Q_optim.model import Qnet, Qtrainer
 
 MAX_MEMORY = 100_000
 MAX_SHORT_MEMORY = 32
-MAX_BEST_MEMORY = 32
+MAX_BEST_MEMORY = 100_000
 BATCH_SIZE = 512
 BATCH_SIZE_SHORT = 8
-BATCH_SIZE_BEST = 4
+BATCH_SIZE_BEST = 512
+top_k_div = 10
 # matplotlib.use('Qt5Agg')
 use_cuda = True
 device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
@@ -120,8 +121,13 @@ class Agent:
         else:
             mini_sample = self.best_memory
         states, actions, rewards, next_states, dones = zip(*mini_sample)
-        r_max, r_argmax = torch.topk(torch.tensor(rewards), int(BATCH_SIZE_BEST/2))
-        self.trainer.train_step(torch.tensor(states)[r_argmax], torch.tensor(actions)[r_argmax], torch.tensor(rewards)[r_argmax], torch.tensor(next_states)[r_argmax])
+        if torch.tensor(rewards).size(0) < top_k_div:
+            top_k = top_k_div
+        else:
+            top_k = torch.tensor(rewards).size(0)
+        r_max, r_argmax = torch.topk(torch.tensor(rewards), int(top_k / top_k_div))
+        self.trainer.train_step(torch.tensor(states)[r_argmax], torch.tensor(actions)[r_argmax],
+                                torch.tensor(rewards)[r_argmax], torch.tensor(next_states)[r_argmax])
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
@@ -159,7 +165,7 @@ class Agent:
         else:
             for i in range(len(self.model.const)):
                 p = predictions[i].cpu().detach().numpy()
-                #self.twopass(p, 0.5, 0., 1, 0) # 4bce2mse
+                # self.twopass(p, 0.5, 0., 1, 0) # 4bce2mse
 
                 if np.all(p == 0.):
                     preds.append(self.model.const[i])

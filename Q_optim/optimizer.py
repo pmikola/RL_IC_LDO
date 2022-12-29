@@ -46,16 +46,15 @@ def train():
         agent.remember_state(state_old, action, reward, state_new, done)
         # train short memory
         #agent.train_short_memory() #
-        if i_counter > 6:
-            agent.train_best_memories()
+
+        agent.train_best_memories()
 
         i_counter += 1
         if reward > record or i_counter > 20:
-
-
             done = 1
             agent.model.done = 1
             i_counter = 0
+
         print("REWARD : ", reward)
         # reward -= 1
         total_score += reward
