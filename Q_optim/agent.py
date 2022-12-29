@@ -1,20 +1,18 @@
-import sys
-import threading
-import time
-from IPython import display
-import matplotlib
-import torch
 import random
-import numpy as np
+import time
 from collections import deque  # datastructure to store memory vals
 
+import numpy as np
+import torch
+
 from Q_optim.model import Qnet, Qtrainer
-from env import LDO_SIM
 
 MAX_MEMORY = 100_000
-MAX_SHORT_MEMORY = 16
+MAX_SHORT_MEMORY = 32
+MAX_BEST_MEMORY = 32
 BATCH_SIZE = 512
 BATCH_SIZE_SHORT = 8
+BATCH_SIZE_BEST = 4
 # matplotlib.use('Qt5Agg')
 use_cuda = True
 device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
@@ -36,6 +34,7 @@ class Agent:
         self.alpha = 0.75  # learning rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.short_memory = deque(maxlen=MAX_SHORT_MEMORY)
+        self.best_memory = deque(maxlen=MAX_BEST_MEMORY)
         self.model = Qnet(len(self.model_input), 13).float().to(device)
         pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print("No. of Parametres : ", pytorch_total_params)
@@ -97,6 +96,7 @@ class Agent:
     def remember_state(self, state, action, reward, next_state, dones):
         self.memory.append((state, action, reward, next_state, dones))
         self.short_memory.append((state, action, reward, next_state, dones))
+        self.best_memory.append((state, action, reward, next_state, dones))
 
     def train_long_memory(self):
         if len(self.memory) > BATCH_SIZE:
@@ -113,6 +113,15 @@ class Agent:
             mini_sample = self.short_memory
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states)
+
+    def train_best_memories(self):
+        if len(self.best_memory) > BATCH_SIZE_BEST:
+            mini_sample = random.sample(self.best_memory, BATCH_SIZE_BEST)  # list of tuples
+        else:
+            mini_sample = self.best_memory
+        states, actions, rewards, next_states, dones = zip(*mini_sample)
+        r_max, r_argmax = torch.topk(torch.tensor(rewards), int(BATCH_SIZE_BEST/2))
+        self.trainer.train_step(torch.tensor(states)[r_argmax], torch.tensor(actions)[r_argmax], torch.tensor(rewards)[r_argmax], torch.tensor(next_states)[r_argmax])
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
