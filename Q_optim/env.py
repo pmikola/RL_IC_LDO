@@ -201,7 +201,9 @@ class LDO_SIM:
         widths = np.arange(1, 31)
         cwt_wavelet = 'mexh'
         dwt_wavelet = 'db1'
-
+        self.V_target = np.full(shape=no_points, fill_value=0.5)
+        self.V_target_max = np.full(shape=no_points, fill_value=0.55)
+        self.V_target_min = np.full(shape=no_points, fill_value=0.45)
         for i in range(l.case_count):  # Iteration in simulation cases
             ttime = l.get_time(i)
             tz = no_points / len(ttime)
@@ -210,6 +212,7 @@ class LDO_SIM:
             I_source = l.get_data('I(I1)', i)
             Vz = no_points / len(V_source)
             Iz = no_points / len(I_source)
+
             Vs = interpolation.zoom(V_source ,Vz,mode='nearest')
             Is = interpolation.zoom(I_source, Iz,mode='nearest')
             self.V_source_list.append(Vs)
@@ -237,7 +240,10 @@ class LDO_SIM:
 
             if plot_option == 1:
                 axplot1, = ax1.plot(t * 1. * 10 ** 6, Vs,'r')
-                axplot2, = ax2.plot(t * 1. * 10 ** 6, Is, 'b--')
+                axplot1b, = ax1.plot(t * 1. * 10 ** 6, self.V_target, 'y-.')
+                axplot1c, = ax1.plot(t * 1. * 10 ** 6, self.V_target_max, 'g-.')
+                axplot1d, = ax1.plot(t * 1. * 10 ** 6, self.V_target_min, 'g-.')
+                axplot2, = ax2.plot(t * 1. * 10 ** 6, Is, 'c--')
                 axplot6r, = ax5.plot(self.V_spec_fftfreq_list[i],self.V_spectrum_list[i],'m')
                 axplot6i, = ax5i.plot(self.V_spec_fftfreq_list[i],self.Vs_fft[i].imag,'c--')
                 axplot7, = ax6.plot(self.cwt_list[i][0],'c')
@@ -255,6 +261,9 @@ class LDO_SIM:
         self.sim_state = self.current_state_var
         for i in range(0,len(self.V_source_list)):
             self.sim_state = np.concatenate([self.sim_state,self.V_source_list[i]])
+            #self.sim_state = np.concatenate([self.sim_state, self.V_target_max])
+            self.sim_state = np.concatenate([self.sim_state, self.V_target])
+            #self.sim_state = np.concatenate([self.sim_state, self.V_target_min])
             self.sim_state = np.concatenate([self.sim_state, self.I_source_list[i]])
             self.sim_state = np.concatenate([self.sim_state,self.cwt_list[i][0]])
             self.sim_state = np.concatenate([self.sim_state, self.cwt_list[i][15]])
@@ -272,9 +281,9 @@ class LDO_SIM:
             ax1.xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
             ax2.yaxis.set_major_formatter(FormatStrFormatter('%.4f'))
             ax1.tick_params(axis='y', colors='red')
-            ax2.tick_params(axis='y', colors='blue')
+            ax2.tick_params(axis='y', colors='c')
             ax1.yaxis.label.set_color('red')
-            ax2.yaxis.label.set_color('blue')
+            ax2.yaxis.label.set_color('c')
             ax1.set_xlabel('Time [us]')
             ax1.set_ylabel('Voltage [V]')
             ax2.set_ylabel('Current [A]')
@@ -289,11 +298,11 @@ class LDO_SIM:
             axplot3.set_ydata(scores)#
             axplot4.set_ydata(mean_scores)
             if len(self.V_source_list) > 1:
-                axplot1.set_ydata(self.V_source_list[-2])
+                axplot1a.set_ydata(self.V_source_list[-2])
                 axplot2.set_ydata(self.I_source_list[-2])
 
             if len(self.V_source_list) > 2:
-                axplot1.set_ydata(self.V_source_list[-3])
+                axplot1a.set_ydata(self.V_source_list[-3])
                 axplot2.set_ydata(self.I_source_list[-3])
 
 

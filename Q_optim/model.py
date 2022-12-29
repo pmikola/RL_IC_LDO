@@ -77,7 +77,7 @@ class Qnet(nn.Module):
 
         self.MemStruct0 = torch.ones(input_size).to(device)
         self.input_size = input_size  # input_size
-        self.hidden_size = int(self.input_size / 3)
+        self.hidden_size = int(self.input_size / 4)
         self.num_layers = 2
         self.fac = 3
         self.SPARSITY = 0.66
@@ -85,13 +85,13 @@ class Qnet(nn.Module):
         self.PERCENT_ON = 0.33
         self.PERCENT_ON_LIN = self.PERCENT_ON
         self.BOOST_STRENGTH = 1.6
-        self.dropout = 0.1
+        self.dropout = 0.2
         self.bidirectional = True
         self.duty_cycle = None
         self.k = 100
         self.break_ties = True
         self.inplace = True
-        self.WSPARSITY = 0.4
+        self.WSPARSITY = self.SPARSITY
         self.relu_on = False
 
         self.data_flow_counter = 0.
@@ -146,15 +146,12 @@ class Qnet(nn.Module):
         #     sparsity=self.SPARSITY_CNN)
         # self.convLBWinn = KWinners2d(channels=12, percent_on=self.PERCENT_ON, relu=self.relu_on,
         #                              boost_strength=self.BOOST_STRENGTH)
-
         self.linearLatent = nn.Linear(self.hidden_size * self.num_layers * self.bi, self.hidden_size)
-
         self.linearLatent_Noisy = NoisyLinear(self.hidden_size * self.num_layers * self.bi, self.hidden_size)
-
+        self.LatentKwinners = KWinners(n=self.hidden_size, percent_on=self.PERCENT_ON_LIN, relu=self.relu_on,
+                                       boost_strength=self.BOOST_STRENGTH)
         # self.linear2 = nn.Linear(self.hidden_size, self.hidden_size)
         # LATENT NON-LINEAR SHARED SPACE MAPPING
-
-        ############### Multiregressor ################
 
         # self.conv0a = nn.Sequential(
         #     SparseWeights2d(nn.Conv2d(in_channels=self.c_1a, out_channels=self.c_2a, kernel_size=(self.k1, self.k2),
@@ -744,7 +741,8 @@ class Qnet(nn.Module):
         # print(x.size())
         x_det = self.linearLatent(x)
         x_noisy = self.linearLatent_Noisy(x)
-        x = F.relu(torch.flatten(x_det) + torch.flatten(x_noisy) - x_noisy.mean())
+        x = torch.flatten(x_det) + torch.flatten(x_noisy) - x_noisy.mean()
+        x = self.LatentKwinners(x)
         # x0 = torch.flatten(self.conv0b(self.conv0a(x)))
         x0 = self.headX0(x)
         x0 = x0.reshape([1, 1, x0.size(0)])
@@ -936,9 +934,9 @@ class Qtrainer:
         # self.optim = torch.optim.RMSprop(model.parameters(),lr=self.lr,weight_decay=2e-3)
         # self.scheduler = CosineAnnealingLR(self.optim, T_max=100)
         # self.criterion = nn.MSELoss(reduce='mean')  # reduce='sum')
-        self.criterion = nn.L1Loss(reduce='mean')
+        # self.criterion = nn.L1Loss(reduce='mean')
         # pos_weight = torch.full([self.model.no_bits], 20.).to(device)
-        # self.criterion = nn.BCEWithLogitsLoss(reduce='mean')  # , pos_weight=pos_weight)
+        self.criterion = nn.BCEWithLogitsLoss(reduce='sum')  # , pos_weight=pos_weight)
 
     def train_step(self, state, action, reward, next_state):
         global loss, loss_t
@@ -971,7 +969,7 @@ class Qtrainer:
             next_prediction = self.model(next_state[idx])
             for i in range(0, self.no_heads):
                 target[i] = prediction[i].clone()
-            for jdx in range(0, 20):
+            for jdx in range(0, self.no_heads):
                 next_pred_max, next_pred_argmax = torch.topk(next_prediction[jdx], self.no_enhancments)
                 Q_new = self.alpha * (reward[idx] + self.gamma * next_pred_max)
                 action_max, action_argmax = torch.topk(action[idx][jdx], self.no_enhancments)

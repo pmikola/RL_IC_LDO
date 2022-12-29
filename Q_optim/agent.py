@@ -12,8 +12,8 @@ MAX_SHORT_MEMORY = 32
 MAX_BEST_MEMORY = 100_000
 BATCH_SIZE = 512
 BATCH_SIZE_SHORT = 8
-BATCH_SIZE_BEST = 512
-top_k_div = 10
+BATCH_SIZE_BEST = 128
+top_k_div = 20
 # matplotlib.use('Qt5Agg')
 use_cuda = True
 device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
@@ -42,7 +42,7 @@ class Agent:
         pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print("No. of Trainable parametres : ", pytorch_total_params)
         time.sleep(0.5)
-        self.trainer = Qtrainer(self.model, lr=0.0005, alpha=self.alpha, gamma=self.gamma)  # , alpha=self.alpha)
+        self.trainer = Qtrainer(self.model, lr=0.0000625, alpha=self.alpha, gamma=self.gamma)  # , alpha=self.alpha)
         self.game = None
         self.agent = None
         self.scores = []
@@ -58,8 +58,8 @@ class Agent:
 
     def define_goals(self, Vout, I_max, I_min, error):
         self.V_output = Vout
-        self.V_output_max = self.V_output + self.V_output * error
-        self.V_output_min = self.V_output - self.V_output * error
+        self.V_output_max = self.V_output + self.V_output * error/2
+        self.V_output_min = self.V_output - self.V_output * error/2
         self.I_max = I_max
         self.I_min = I_min
 

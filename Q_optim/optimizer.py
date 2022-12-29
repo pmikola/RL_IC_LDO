@@ -47,8 +47,6 @@ def train():
         # train short memory
         #agent.train_short_memory() #
 
-        agent.train_best_memories()
-
         i_counter += 1
         if reward > record or i_counter > 20:
             done = 1
@@ -69,6 +67,7 @@ def train():
             # train long memory, plot result
             agent.n_games += 1
             agent.train_long_memory()
+            agent.train_best_memories()
             if agent.scores[-1] > record:
                 record = agent.scores[-1]
                 agent.model.save()
