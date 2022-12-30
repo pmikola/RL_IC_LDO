@@ -56,6 +56,7 @@ class LDO_SIM:
         self.w_pass = str(random.uniform(25000., 55000.));self.Rset=str(random.uniform(5., 35.))
         # STARTING VALUES
         self.rewards = []
+        # TODO : goals in env init
 
 
     def generate_output_dim(self):
@@ -239,7 +240,7 @@ class LDO_SIM:
             #print(self.dwt_list[i])
 
             if plot_option == 1:
-                axplot1, = ax1.plot(t * 1. * 10 ** 6, Vs,'r')
+                axplot1, = ax1.plot(t * 1. * 10 ** 6, Vs,'r:')
                 axplot1b, = ax1.plot(t * 1. * 10 ** 6, self.V_target, 'y-.')
                 axplot1c, = ax1.plot(t * 1. * 10 ** 6, self.V_target_max, 'g-.')
                 axplot1d, = ax1.plot(t * 1. * 10 ** 6, self.V_target_min, 'g-.')

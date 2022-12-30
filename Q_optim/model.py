@@ -85,7 +85,7 @@ class Qnet(nn.Module):
         self.PERCENT_ON = 0.33
         self.PERCENT_ON_LIN = self.PERCENT_ON
         self.BOOST_STRENGTH = 1.6
-        self.dropout = 0.2
+        self.dropout = 0.1
         self.bidirectional = True
         self.duty_cycle = None
         self.k = 100
@@ -129,11 +129,11 @@ class Qnet(nn.Module):
                                   dropout=self.dropout,
                                   bidirectional=self.bidirectional)
 
-        # self.HTMblock = HTMBlock(
-        #     dim=30,
-        #     topk_mems=14,
-        #     mem_chunk_size=56
-        # )
+        self.HTMblock = HTMBlock(
+            dim=30,
+            topk_mems=14,
+            mem_chunk_size=56
+        )
         # self.queries = torch.randn(1, 128, 512).to(device)
 
         # self.convLatentA = SparseWeights2d(
@@ -961,7 +961,7 @@ class Qtrainer:
         # Qnew (state(t),action(t)) <-
         # <- Q(state(t),action(t)) + alpha * (REWARD(t) + gamma *
         #  * maxQ(state(t+1),actions) - Q(state(t),action(t))
-        ################# Standard Q Learrning Equation #####################
+        ################# Standard Q Learrning Equation #############       ########
 
         for idx in range(0, int(np.array(state.cpu().detach().numpy()).shape[0])):
             # Q_s = F.normalize(Q_s, dim=0)
