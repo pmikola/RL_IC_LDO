@@ -129,13 +129,7 @@ class Qnet(nn.Module):
                                   dropout=self.dropout,
                                   bidirectional=self.bidirectional)
 
-        # self.HTMblock = HTMBlock(
-        #     dim=30,
-        #     topk_mems=14,
-        #     mem_chunk_size=56
-        # )
-        # self.queries = torch.randn(1, 128, 512).to(device)
-
+        
         # self.convLatentA = SparseWeights2d(
         #     nn.Conv2d(in_channels=10, out_channels=14, kernel_size=(3, 3), stride=(1, 1), padding=1),
         #     sparsity=self.SPARSITY_CNN)
@@ -717,6 +711,8 @@ class Qnet(nn.Module):
 
         # self.data_flow_counter += 1.
         x = x.reshape([1, 1, x.size(0)])
+        y = x.view([-1, 50])
+        #print(y.size())
         if self.done == 1:
             self.mem_init()
             self.done = 0
@@ -726,8 +722,11 @@ class Qnet(nn.Module):
         # print(x.size())
         _, (self.h_0, self.c_0) = self.lstmLatent(x, (self.h_0, self.c_0))
         x = torch.flatten(self.h_0)
+        #x = x.view([-1, 50])
+        #y = self.HTMblock0(y, self.memories, mask=self.mask)
+        #print(y.size())
         # print(self.memories.size(), self.mask.size())
-
+        #print(self.h_0.size())
         # torch.set_printoptions(profile="full")
         # self.MemStruct0 = torch.add(x, self.MemStruct0) / torch.max(self.MemStruct0)
         # x = self.h_0.reshape(14, 10, 3, 3)
@@ -935,7 +934,7 @@ class Qtrainer:
         # self.criterion = nn.MSELoss(reduce='mean')  # reduce='sum')
         # self.criterion = nn.L1Loss(reduce='mean')
         # pos_weight = torch.full([self.model.no_bits], 20.).to(device)
-        self.criterion = nn.BCEWithLogitsLoss(reduce='sum')  # , pos_weight=pos_weight)
+        self.criterion = nn.BCEWithLogitsLoss(reduce='mean')  # , pos_weight=pos_weight)
 
     def train_step(self, state, action, reward, next_state):
         global loss, loss_t

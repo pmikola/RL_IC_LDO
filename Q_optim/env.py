@@ -268,9 +268,9 @@ class LDO_SIM:
         for k in range(0,len(self.current_state_var)):
             self.vars_list.append(self.float_bin(self.current_state_var[k]))
 
-        row = len(self.vars_list)
-        column = len(self.vars_list[0])
-        print(f'Rows:{row}, Column:{column}','\n',self.vars_list)
+        #row = len(self.vars_list)
+        #column = len(self.vars_list[0])
+        #print(f'Rows:{row}, Column:{column}','\n',self.vars_list)
         self.vars = np.array(self.vars_list,dtype=np.float32)
 
         self.sim_state = np.concatenate([self.sim_state, np.ndarray.flatten(self.vars)])
@@ -361,14 +361,14 @@ class LDO_SIM:
         os.remove(filepath + '_1.op.raw')
         os.remove(filepath + '_1.net')
 
-    def float_bin(self,number,float_prec = 3, places=16,dec_places=10):
+    def float_bin(self,number,float_prec = 3, places=21,dec_places=16):
         number = round(number, float_prec)
         whole, dec = str(number).split(".")
         whole = int(whole)
         dec = int(dec)
         resw = format(whole, '0'+str(places)+'b')
         resd = format(dec, '0'+str(dec_places)+'b')
-        #print(resw,resd)
+        # print(resw,resd)
         res = []
         for i in range(0,len(resw)):
             res.append(float(resw[i]))

@@ -45,8 +45,8 @@ def train():
         # remember
         agent.remember_state(state_old, action, reward, state_new, done)
         # train short memory
-        #agent.train_short_memory() #
-        agent.train_best_memories() # TODO : put in main loop or after finished cycle?
+        # agent.train_short_memory() #
+        agent.train_best_memories()  # TODO : put in main loop or after finished cycle?
         i_counter += 1
         if reward > record or i_counter > 20:
             done = 1
@@ -73,8 +73,8 @@ def train():
                 agent.model.save()
             print('Sim Cycle : ', agent.n_games, 'Score : ', agent.scores[-1], 'Record : ', record)
             ldo_sim.play_step(1, agent.scores, agent.mean_scores, agent.trainer.loss_list)
-            done = 0
-
+            done = 1
+            agent.train_best_memories()
             # print(agent.ldo_sim.state_var_str)
             ldo_sim = LDO_SIM()
             ldo_sim.generate_output_dim()
