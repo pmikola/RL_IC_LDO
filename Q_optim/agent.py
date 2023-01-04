@@ -23,7 +23,6 @@ class Agent:
     def __init__(self, ldo_sim):
         self.ldo_sim = ldo_sim
         self.model_input = ldo_sim.sim_state
-        self.model_output_len = ldo_sim.output_shape.shape[0]
         self.I_min = None
         self.I_max = None
         self.V_output_min = None
@@ -184,14 +183,6 @@ class Agent:
 
             return final_move.astype(float), np.array(predictions_r).astype(float)
         # def get_reward(self):
-
-    def onet2b(self, final_move):
-        multiplier_val_range = range(0, self.ldo_sim.nbits_multiplier)
-        choosen_dev_range = range(self.ldo_sim.nbits_multiplier, self.ldo_sim.nbits_multiplier + self.ldo_sim.nbits_dev)
-        MbVal = final_move[multiplier_val_range]
-        DevbVal = final_move[choosen_dev_range]
-        stop_bit = final_move[-1]
-        return MbVal, DevbVal, stop_bit
 
     @staticmethod
     def b2val(MbVal):

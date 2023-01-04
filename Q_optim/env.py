@@ -101,7 +101,6 @@ class LDO_SIM:
         self.state_var_str.append(self.Rset)
 
     def set_current_var(self,values,reward):
-
         self.w_change1 = str(values[0])
         self.w_change2 = str(values[1])
         self.w_change3 = str(values[2])
@@ -259,14 +258,31 @@ class LDO_SIM:
 
         LDO_SIM.get_current_var_state(self)
         self.current_state_var = np.array(self.state_var_str).astype(np.float)
-        self.sim_state = self.current_state_var
-        for i in range(0,len(self.V_source_list)):
-            self.sim_state = np.concatenate([self.sim_state,self.V_source_list[i]])
-            #self.sim_state = np.concatenate([self.sim_state, self.V_target_max])
+        #self.sim_state = np.full((len(self.V_source_list),14,no_points),0)
+        self.sim_state = [0,1,0,1,0,1,0,1,0,1]
+        #self.vars = np.full((len(self.state_var_str),26),0)
+
+        # TODO : make one init in diffrent script .py file
+        self.vars_list = []
+       # self.env_state = np.empty((len(self.V_source_list),14,no_points))
+        for k in range(0,len(self.current_state_var)):
+            self.vars_list.append(self.float_bin(self.current_state_var[k]))
+
+        row = len(self.vars_list)
+        column = len(self.vars_list[0])
+        print(f'Rows:{row}, Column:{column}','\n',self.vars_list)
+        self.vars = np.array(self.vars_list,dtype=np.float32)
+
+        self.sim_state = np.concatenate([self.sim_state, np.ndarray.flatten(self.vars)])
+
+
+        for i in range(0, len(self.V_source_list)):
+            self.sim_state = np.concatenate([self.sim_state, self.V_source_list[i]])
+            # self.sim_state = np.concatenate([self.sim_state, self.V_target_max])
             self.sim_state = np.concatenate([self.sim_state, self.V_target])
-            #self.sim_state = np.concatenate([self.sim_state, self.V_target_min])
+            # self.sim_state = np.concatenate([self.sim_state, self.V_target_min])
             self.sim_state = np.concatenate([self.sim_state, self.I_source_list[i]])
-            self.sim_state = np.concatenate([self.sim_state,self.cwt_list[i][0]])
+            self.sim_state = np.concatenate([self.sim_state, self.cwt_list[i][0]])
             self.sim_state = np.concatenate([self.sim_state, self.cwt_list[i][15]])
             self.sim_state = np.concatenate([self.sim_state, self.cwt_list[i][29]])
             self.sim_state = np.concatenate([self.sim_state, self.dwt_list[i][0]])
@@ -274,8 +290,6 @@ class LDO_SIM:
             self.sim_state = np.concatenate([self.sim_state, self.dwt_list[i][2]])
             self.sim_state = np.concatenate([self.sim_state, self.V_spectrum_list[i]])
             self.sim_state = np.concatenate([self.sim_state, self.Vs_fft[i].imag])
-
-
 
         if plot_option == 1:
             ax1.yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
@@ -346,3 +360,18 @@ class LDO_SIM:
         os.remove(filepath + '_1.log')
         os.remove(filepath + '_1.op.raw')
         os.remove(filepath + '_1.net')
+
+    def float_bin(self,number,float_prec = 3, places=16,dec_places=10):
+        number = round(number, float_prec)
+        whole, dec = str(number).split(".")
+        whole = int(whole)
+        dec = int(dec)
+        resw = format(whole, '0'+str(places)+'b')
+        resd = format(dec, '0'+str(dec_places)+'b')
+        #print(resw,resd)
+        res = []
+        for i in range(0,len(resw)):
+            res.append(float(resw[i]))
+        for i in range(0,len(resd)):
+            res.append(float(resd[i]))
+        return np.array(res,dtype=np.float32)

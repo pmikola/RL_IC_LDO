@@ -75,7 +75,7 @@ class Qnet(nn.Module):
     def __init__(self, input_size, no_bits):
         super().__init__()
 
-        self.MemStruct0 = torch.ones(input_size).to(device)
+        #self.MemStruct0 = torch.ones(input_size).to(device)
         self.input_size = input_size  # input_size
         self.hidden_size = int(self.input_size / 4)
         self.num_layers = 2
@@ -129,11 +129,11 @@ class Qnet(nn.Module):
                                   dropout=self.dropout,
                                   bidirectional=self.bidirectional)
 
-        self.HTMblock = HTMBlock(
-            dim=30,
-            topk_mems=14,
-            mem_chunk_size=56
-        )
+        # self.HTMblock = HTMBlock(
+        #     dim=30,
+        #     topk_mems=14,
+        #     mem_chunk_size=56
+        # )
         # self.queries = torch.randn(1, 128, 512).to(device)
 
         # self.convLatentA = SparseWeights2d(
@@ -713,10 +713,9 @@ class Qnet(nn.Module):
         self.c_R0 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size / self.fac)).to(device))
 
     def forward(self, x):
-        # print(x.size())
+        #print(x.size())
 
         # self.data_flow_counter += 1.
-
         x = x.reshape([1, 1, x.size(0)])
         if self.done == 1:
             self.mem_init()
