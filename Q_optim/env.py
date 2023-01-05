@@ -192,7 +192,7 @@ class LDO_SIM:
         self.cwt_list = []
         self.dwt_list = []
         # number of signal points
-        no_points = 250
+        no_points = 200
         # sample spacing
         T = 1. / 10*no_points
         # cwt no points
@@ -329,7 +329,7 @@ class LDO_SIM:
             ax4.tick_params(axis='y', colors='orange')
             ax4.yaxis.label.set_color('orange')
             ax4.set_ylabel('Loss')
-            ax4.set_yscale('log')
+            #ax4.set_yscale('log')
 
             ax5.set_xlabel('Freq components')
             ax5.set_ylabel('Real')
@@ -361,7 +361,7 @@ class LDO_SIM:
         os.remove(filepath + '_1.op.raw')
         os.remove(filepath + '_1.net')
 
-    def float_bin(self,number,float_prec = 3, places=21,dec_places=16):
+    def float_bin(self,number,float_prec = 4, places=21,dec_places=14):
         number = round(number, float_prec)
         whole, dec = str(number).split(".")
         whole = int(whole)

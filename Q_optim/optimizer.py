@@ -74,7 +74,6 @@ def train():
             print('Sim Cycle : ', agent.n_games, 'Score : ', agent.scores[-1], 'Record : ', record)
             ldo_sim.play_step(1, agent.scores, agent.mean_scores, agent.trainer.loss_list)
             done = 1
-            agent.train_best_memories()
             # print(agent.ldo_sim.state_var_str)
             ldo_sim = LDO_SIM()
             ldo_sim.generate_output_dim()

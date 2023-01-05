@@ -7,16 +7,18 @@ import torch
 
 from Q_optim.model import Qnet, Qtrainer
 
-MAX_MEMORY = 100_000
+MAX_MEMORY = 32000
 MAX_SHORT_MEMORY = 32
-MAX_BEST_MEMORY = 100_000
+MAX_BEST_MEMORY = 32000
 BATCH_SIZE = 512
 BATCH_SIZE_SHORT = 8
 BATCH_SIZE_BEST = 128
-top_k_div = 20
+top_k_div = 10
 # matplotlib.use('Qt5Agg')
 use_cuda = True
 device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
+
+torch.cuda.empty_cache()
 
 
 class Agent:
@@ -57,8 +59,8 @@ class Agent:
 
     def define_goals(self, Vout, I_max, I_min, error):
         self.V_output = Vout
-        self.V_output_max = self.V_output + self.V_output * error/2
-        self.V_output_min = self.V_output - self.V_output * error/2
+        self.V_output_max = self.V_output + self.V_output * error / 2
+        self.V_output_min = self.V_output - self.V_output * error / 2
         self.I_max = I_max
         self.I_min = I_min
 
@@ -66,6 +68,7 @@ class Agent:
         Voltages = agent.ldo_sim.V_source_list
         for i in range(0, len(Voltages)):
             V_d1 = np.mean(Voltages[-i])
+            # print(Voltages[-i])
             # # V_d2 = np.mean(Voltages[-i - 1])
             # max_v = np.max(Voltages[-i])
             # min_v = np.min(Voltages[-i])
@@ -80,13 +83,16 @@ class Agent:
             #     reward += 10
             # # if self.V_output_min < V_d2 < self.V_output_max:
             # #    reward += 25
-            if V_d1 > 0.:
-                reward += 15
+            # time.sleep(1)%%%%
+            # if V_d1 > 0.:
+            #     reward += 15
             for j in range(0, len(Voltages[-i])):
-                if self.V_output_max > Voltages[-i][j] > self.V_output_min:
+                if self.V_output_max >= Voltages[-i][j] >= self.V_output_min:
                     reward += 1
                 else:
-                    reward -= 0
+                    #reward -= 0
+                    pass
+
         return reward
 
     def get_state(self):
@@ -121,10 +127,11 @@ class Agent:
             mini_sample = self.best_memory
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         if torch.tensor(rewards).size(0) < top_k_div:
-            top_k = top_k_div
+            r_max, r_argmax = torch.topk(torch.tensor(rewards), 1)
         else:
-            top_k = torch.tensor(rewards).size(0)
-        r_max, r_argmax = torch.topk(torch.tensor(rewards), int(top_k / top_k_div))
+            all_decisions = torch.tensor(rewards).size(0)
+            top_k = 0.33
+            r_max, r_argmax = torch.topk(torch.tensor(rewards), int(all_decisions * top_k))
         self.trainer.train_step(torch.tensor(states)[r_argmax], torch.tensor(actions)[r_argmax],
                                 torch.tensor(rewards)[r_argmax], torch.tensor(next_states)[r_argmax])
 

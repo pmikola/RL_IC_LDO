@@ -25,6 +25,7 @@ from nupic.torch.modules import (
     rezero_weights, update_boost_strength
 )
 import nupic.torch.functions as FF
+from torch.utils.data import DataLoader
 
 use_cuda = True
 device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
@@ -75,9 +76,9 @@ class Qnet(nn.Module):
     def __init__(self, input_size, no_bits):
         super().__init__()
 
-        #self.MemStruct0 = torch.ones(input_size).to(device)
+        # self.MemStruct0 = torch.ones(input_size).to(device)
         self.input_size = input_size  # input_size
-        self.hidden_size = int(self.input_size / 4)
+        self.hidden_size = int(self.input_size / 8)
         self.num_layers = 2
         self.fac = 3
         self.SPARSITY = 0.66
@@ -129,7 +130,6 @@ class Qnet(nn.Module):
                                   dropout=self.dropout,
                                   bidirectional=self.bidirectional)
 
-        
         # self.convLatentA = SparseWeights2d(
         #     nn.Conv2d(in_channels=10, out_channels=14, kernel_size=(3, 3), stride=(1, 1), padding=1),
         #     sparsity=self.SPARSITY_CNN)
@@ -707,12 +707,12 @@ class Qnet(nn.Module):
         self.c_R0 = Variable(torch.zeros(self.num_layers * self.bi, 1, int(self.hidden_size / self.fac)).to(device))
 
     def forward(self, x):
-        #print(x.size())
+        # print(x.size())
 
         # self.data_flow_counter += 1.
         x = x.reshape([1, 1, x.size(0)])
-        y = x.view([-1, 50])
-        #print(y.size())
+        # y = x.view([-1, 50])
+        # print(y.size())
         if self.done == 1:
             self.mem_init()
             self.done = 0
@@ -722,11 +722,11 @@ class Qnet(nn.Module):
         # print(x.size())
         _, (self.h_0, self.c_0) = self.lstmLatent(x, (self.h_0, self.c_0))
         x = torch.flatten(self.h_0)
-        #x = x.view([-1, 50])
-        #y = self.HTMblock0(y, self.memories, mask=self.mask)
-        #print(y.size())
+        # x = x.view([-1, 50])
+        # y = self.HTMblock0(y, self.memories, mask=self.mask)
+        # print(y.size())
         # print(self.memories.size(), self.mask.size())
-        #print(self.h_0.size())
+        # print(self.h_0.size())
         # torch.set_printoptions(profile="full")
         # self.MemStruct0 = torch.add(x, self.MemStruct0) / torch.max(self.MemStruct0)
         # x = self.h_0.reshape(14, 10, 3, 3)
@@ -923,22 +923,20 @@ class Qtrainer:
         self.model = model
         self.loss_list = []
         self.no_heads = 20
-        self.no_enhancments = int(
-            self.model.no_bits * model.PERCENT_ON)  # smaller => slower training but more robust (just like in k-winners)
+        self.no_enhancments = int(self.model.no_bits * model.PERCENT_ON)  # smaller => slower training but more robust (just like in k-winners)
         self.treshold_bce = nn.Hardtanh(0., 1.)
         # self.swa_model = AveragedModel(model)
         # self.optim = torch.optim.SGD(model.parameters(), lr=self.lr)
-        self.optim = torch.optim.Adam(model.parameters(), lr=self.lr, weight_decay=2e-4, amsgrad=True)
+        self.optim = torch.optim.Adam(model.parameters(), lr=self.lr, weight_decay=2e-4)  # , amsgrad=True)
         # self.optim = torch.optim.RMSprop(model.parameters(),lr=self.lr,weight_decay=2e-3)
         # self.scheduler = CosineAnnealingLR(self.optim, T_max=100)
-        # self.criterion = nn.MSELoss(reduce='mean')  # reduce='sum')
+        #self.criterion = nn.MSELoss(reduce='sum')  # reduce='sum')
         # self.criterion = nn.L1Loss(reduce='mean')
         # pos_weight = torch.full([self.model.no_bits], 20.).to(device)
-        self.criterion = nn.BCEWithLogitsLoss(reduce='mean')  # , pos_weight=pos_weight)
+        self.criterion = nn.BCEWithLogitsLoss(reduce='none')  # , pos_weight=pos_weight)
 
     def train_step(self, state, action, reward, next_state):
-        global loss, loss_t
-
+        global loss, loss_t, loss_big
         state = torch.tensor(np.array(state), dtype=torch.float32).to(device)
         action = torch.tensor(np.array(action), dtype=torch.float32).to(device)
         reward = torch.tensor(np.array(reward), dtype=torch.float32).to(device)
@@ -960,6 +958,8 @@ class Qtrainer:
         # <- Q(state(t),action(t)) + alpha * (REWARD(t) + gamma *
         #  * maxQ(state(t+1),actions) - Q(state(t),action(t))
         ################# Standard Q Learrning Equation #############       ########
+        # TODO : make dataloader that are dependend of memory type with batch training
+        print("state", state.size())
 
         for idx in range(0, int(np.array(state.cpu().detach().numpy()).shape[0])):
             # Q_s = F.normalize(Q_s, dim=0)
@@ -972,32 +972,44 @@ class Qtrainer:
                 Q_new = self.alpha * (reward[idx] + self.gamma * next_pred_max)
                 action_max, action_argmax = torch.topk(action[idx][jdx], self.no_enhancments)
 
-                target[jdx][action_argmax] = Q_new
+                target[jdx][action_argmax] = Q_new  # self.treshold_bce(Q_new)
 
                 # print(" |||| state |XX|", state[idx], " |XX| target |XX|", target[idx], " |XX| preds |XX|",
                 #       prediction[idx], " |XX| Q_new |XX|", Q_new, " |XX| R |XX|", reward[idx], " |XX| ACTION |XX|",
                 #       action[0][idx], " |||| ")
 
-                # target[jdx] = self.treshold_bce(target[jdx])
-                if jdx == 0:
-                    loss = self.criterion(target[jdx], prediction[jdx])
-                    loss = Variable(loss, requires_grad=True)
+                target[jdx] = self.treshold_bce(target[jdx])
+                #print(prediction[jdx],target[jdx])
+                if idx == 0 and jdx == 0:
+                    loss_big = self.criterion(prediction[jdx], target[jdx])
+                    loss_big = Variable(loss_big, requires_grad=True)
+                    # loss_big = torch.pow(torch.subtract(prediction[jdx],target[jdx]),2)  # MSE
+                    # loss_big = Variable(loss_big, requires_grad=True)
                 else:
-                    loss_t = self.criterion(target[jdx], prediction[jdx])
+                    loss_big_t = self.criterion(prediction[jdx], target[jdx])
+                    loss_big = loss_big + Variable(loss_big_t, requires_grad=True)
+                    # loss_big_t = torch.pow(torch.subtract(prediction[jdx],target[jdx]),2)  # MSE
+                    # loss_big = loss_big + Variable(loss_big_t, requires_grad=True)
+                if jdx == 0:
+                    loss = self.criterion(prediction[jdx], target[jdx])
+                    loss = Variable(loss, requires_grad=True)
+                    # loss = torch.pow(torch.subtract(prediction[jdx],target[jdx]),2)  # MSE
+                    # loss = Variable(loss, requires_grad=True)
+
+                else:
+                    loss_t = self.criterion(prediction[jdx], target[jdx])
                     loss = loss + Variable(loss_t, requires_grad=True)
+                    # loss_t = torch.pow(torch.subtract(prediction[jdx],target[jdx]),2)  # MSE
+                    # loss = loss + Variable(loss_t, requires_grad=True)
+
+            self.loss_list.append(loss.item())  ###
+            loss.backward()
+            self.optim.step()
+            self.model.apply(update_boost_strength)
+            self.model.apply(rezero_weights)
             # print(target)
-            if reward[idx] == torch.max(reward):
-                # print(reward[idx])
-                ##for kdx in range(0,reward.size(0)):
-                # loss = loss / loss
-                self.loss_list.append(loss.item())
-                loss.backward()
-                self.optim.step()
-                self.model.apply(update_boost_strength)
-                self.model.apply(rezero_weights)
-            else:
-                self.loss_list.append(loss.item())
-                loss.backward()
-                self.optim.step()
-                self.model.apply(update_boost_strength)
-                self.model.apply(rezero_weights)
+        self.loss_list.append(loss_big.item())
+        loss_big.backward()
+        self.optim.step()
+        self.model.apply(update_boost_strength)
+        self.model.apply(rezero_weights)
